@@ -155,6 +155,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <button id="savePayment">Save Payment Record</button>
 <button data-close="paymentForm" class="secondary">Cancel</button>
 </div>
+<h3>Registered Clients</h3><div id="clientList"><p class="muted">No clients registered yet.</p></div>
 </section>
 
 <h3>Projects</h3><div id="projects"></div>
@@ -269,6 +270,7 @@ function render(){
   const badge=(label,days,cls)=>days===null||days===undefined?"":`<span class="status ${cls}">${label}: ${days} days</span>`;
   return `<div class="project"><b>${esc(p.project_name)}</b><p>Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | End: ${esc(p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p><p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p>${profile.role==="admin"?badge("Project delay",t.project_delay_days,projectStatus)+badge("Material collection",t.material_collection_delay_days,materialStatus)+badge("Billing to collection",billDays,billStatus):""}<p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p><div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div></div>`;
  }).join(""):"<p class='muted'>No projects available.</p>";
+ $("clientList").innerHTML=clients.length?clients.map(c=>{const company=companies.find(x=>x.id===c.company_id);return `<div class="project"><b>${esc(c.client_name)}</b><p>Company: ${esc(company?.company_name||"Not linked")} | Category: ${esc(c.client_category||"—")}</p><p>${esc(c.email||"")} ${c.phone?"| "+esc(c.phone):""}</p></div>`}).join(""):"<p class='muted'>No clients registered yet.</p>";
  $("history").innerHTML=payments.length?payments.map(p=>{
   const project=projects.find(x=>x.id===p.project_id);
   const buttons=isStaff()&&p.status==="recorded"?`<p><button data-verify="${p.id}" data-status="verified">Verify</button><button class="danger" data-verify="${p.id}" data-status="rejected">Reject</button></p>`:"";
