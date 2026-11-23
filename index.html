@@ -399,12 +399,11 @@ function render(){
  $("adminProjectFields").classList.toggle("hidden",!admin);
  $("projectClientAdminOnly").classList.remove("hidden");
  $("addProjectBtn").disabled=clients.length===0;
- $("addProjectBtn").textContent=clients.length?" + Add Project":"+ Add Project (locked)";
+ $("addProjectBtn").textContent=clients.length?"+ Add Project":"+ Add Project (locked)";
  $("projectLockNote").classList.toggle("hidden",clients.length>0);
  $("projectClient").innerHTML=clients.map(c=>'<option value="'+c.id+'">'+esc(c.client_name)+'</option>').join("");
  $("projectClient").value=clients[0]?.id||"";
  $("paymentProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc(p.project_name)+'</option>').join("");
- $("clientCompany").innerHTML='<option value="">Select company</option>'+companies.map(c=>'<option value="'+c.id+'">'+esc(c.company_name)+'</option>').join("");
  $("trackingProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc(p.project_name)+'</option>').join("");
 }
 async function addClient(){
