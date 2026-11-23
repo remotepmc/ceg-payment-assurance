@@ -231,6 +231,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <h3 id="pendingProjectsHeading">Add Revision — Pending Admin Review</h3><div id="projects"></div>
 <h3>Final Project</h3><div id="finalProjects"></div>
 </div>
+<div id="adminProjectDetail" class="panel hidden"><div class="row"><h3>Complete Submitted Project</h3><button type="button" id="closeAdminProjectDetail" class="secondary">Close</button></div><div id="adminProjectDetailContent"></div></div>
 <div id="clientProjectTabs" class="client-project-tabs hidden">
  <div class="client-tabbar">
   <button type="button" class="client-tab active" data-client-tab="resubmitProjectTab">Resubmit Project</button>
@@ -347,7 +348,7 @@ async function start(){
 async function load(){
  const [c,p,pa,co,at,pr]=await Promise.all([
   db.from("clients").select("id,client_name,email,phone,user_id,company_id,client_category"),
-  db.from("projects").select("id,client_id,project_code,project_name,project_value,status,workflow_stage,revision_no,finalized_at,finalized_by,project_type,project_start_date,project_end_date,expected_duration_days,expected_project_end_date,actual_project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date,billing_delay_reason,payment_delay_reason,client_remarks"),
+  db.from("projects").select("*"),
   db.from("payments").select("id,project_id,amount,payment_date,payment_mode,payment_type,reference_number,status").order("payment_date",{ascending:false}),
   db.from("companies").select("id,company_name").order("company_name"),
   db.from("project_admin_tracking").select("*"),
@@ -461,6 +462,32 @@ function setupRecordFilters(){
  fill("filterProjectType",[...new Set(projects.map(x=>x.project_type).filter(Boolean))].map(x=>({value:x,label:x})),"All Project Types");
 }
 
+async function openAdminProject(projectId){
+ if(!isAdmin()){alert("Only Admin can open submitted project details.");return}
+ const {data:p,error}=await db.from("projects").select("*").eq("id",projectId).single();
+ if(error||!p){alert("Could not open project details: "+(error?.message||"Project not found"));return}
+ const [paymentResult,clientResult,trackingResult]=await Promise.all([
+  db.from("payments").select("*").eq("project_id",projectId).order("payment_date",{ascending:true}),
+  db.from("clients").select("client_name,client_category,email,phone,company_id").eq("id",p.client_id).maybeSingle(),
+  db.from("project_admin_tracking").select("*").eq("project_id",projectId).maybeSingle()
+ ]);
+ if(paymentResult.error||clientResult.error||trackingResult.error){alert("Related project details could not be loaded: "+[paymentResult.error,clientResult.error,trackingResult.error].filter(Boolean).map(x=>x.message).join("; "));return}
+ const c=clientResult.data||{},t=trackingResult.data||{},payRows=paymentResult.data||[];
+ const value=(label,v)=>'<div class="form-section"><label>'+esc(label)+'</label><p style="font-size:25px;margin:7px 0;overflow-wrap:anywhere">'+esc(v===null||v===undefined||v===""?"—":String(v))+'</p></div>';
+ const yn=v=>v===true?"Yes":v===false?"No":v??"—";
+ const paymentMarkup=payRows.length?payRows.map((x,i)=>'<div class="form-section"><h4>Payment '+(i+1)+'</h4>'+value("Payment Made",x.payment_type)+value("Payment Amount",money(x.amount))+value("Payment Made Date",x.payment_date)+value("Payment Status",x.status)+value("Payment Mode",x.payment_mode)+value("Reference Number",x.reference_number)+value("Notes",x.notes)+'</div>').join(""):'<p class="muted">No payment records linked to this project.</p>';
+ $("adminProjectDetailContent").innerHTML=
+  '<p><b>Project ID:</b> '+esc(p.project_code||p.id)+' | <b>Workflow:</b> '+esc(p.workflow_stage||"—")+' | <b>Revision:</b> '+esc(p.revision_no||1)+'</p>'+
+  '<div class="form-section"><h4>1. Project Details</h4>'+value("Client Name",c.client_name)+value("Client Category",c.client_category)+value("Client Email",c.email)+value("Client Mobile",c.phone)+value("Project Name",p.project_name)+value("Project Type",p.project_type)+'</div>'+
+  '<div class="form-section"><h4>2. Project Timeline</h4>'+value("Project Start Date",p.project_start_date)+value("Expected Project End Date",p.expected_project_end_date)+value("Actual Project End Date",p.actual_project_end_date||p.project_end_date)+value("Project Hold",yn(p.project_hold))+value("Project Execution / WIP Delay Reason",p.wip_delay_reason)+'</div>'+
+  '<div class="form-section"><h4>3. Billing & Materials</h4>'+value("Billing Done",yn(p.billing_done))+value("Billing Date",p.billing_date)+value("Billing Amount with Tax",money(p.billing_amount_with_tax??p.project_value))+value("Material Dispatch Date",p.material_dispatch_date)+value("Billing Delay Reason",p.billing_delay_reason)+value("Material Delivered Date",p.material_delivered_date)+value("Material Collection Date",p.material_collection_date)+'</div>'+
+  '<div class="form-section"><h4>4. Payment Details</h4>'+paymentMarkup+'</div>'+
+  '<div class="form-section"><h4>5. Payment Delay Reason</h4>'+value("Payment Delay Reason",p.payment_delay_reason)+'</div>'+
+  '<div class="form-section"><h4>6. Comments / Remarks</h4>'+value("Client Comments / Remarks",p.client_remarks)+'</div>'+
+  '<div class="form-section"><h4>7. Admin Review & Analysis</h4>'+value("Execution Delay Reason (Admin Tracking)",t.project_delay_reason)+value("Billing Delay Reason (Admin Tracking)",t.billing_delay_reason)+value("Payment Delay Reason (Admin Tracking)",t.payment_delay_reason)+value("CEG Service Designed",t.ceg_service_designed)+value("Finalised At",p.finalized_at)+value("Finalised By",p.finalized_by)+'</div>';
+ $("adminProjectDetail").classList.remove("hidden");
+ $("adminProjectDetail").scrollIntoView({behavior:"smooth",block:"start"});
+}
 function render(){
  const approvedProjects=projects.filter(p=>p.workflow_stage==="final");
  const totalValue=approvedProjects.reduce((sum,p)=>sum+Number(p.billing_amount_with_tax??p.project_value??0),0);
@@ -538,7 +565,7 @@ function render(){
   const fullDate=fullCollectionDate(p),d=delayInfo(p);
   const badge=(label,item,reason)=>item.days===null||item.days<1?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
-  const adminActions=isAdmin()&&p.workflow_stage!=="final"?`<p><button data-revise="${p.id}">Open Add Revision</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:"";
+  const adminActions=isAdmin()&&p.workflow_stage!=="final"?`<p><button data-open-project="${p.id}">Open Full Project</button><button data-revise="${p.id}">Open Add Revision</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:isAdmin()?`<p><button data-open-project="${p.id}">Open Full Project</button></p>`:"";
   const service=t.ceg_service_designed||"Not yet mapped by Admin";
   const legacyService=service==="Previously marked Yes";
   const serviceLabel=legacyService?"Legacy service flag — exact service name not recorded":service;
@@ -775,6 +802,7 @@ $("trackingProject").onchange=()=>{
  $("editPaymentDelayReason").value=t.payment_delay_reason||"";
  $("editCegDesigned").value=t.ceg_service_designed||"";
 };
+$("closeAdminProjectDetail").onclick=()=>$("adminProjectDetail").classList.add("hidden");
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
  document.addEventListener("input",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.id,suffix);});
@@ -805,6 +833,7 @@ document.addEventListener("click",e=>{
  const c=e.target.closest("[data-close]");if(c)$(c.dataset.close).classList.add("hidden");
  const v=e.target.closest("[data-verify]");if(v)verify(v.dataset.verify,v.dataset.status);
  const rev=e.target.closest("[data-revise]");if(rev){$("trackingProject").value=rev.dataset.revise;$("trackingProject").dispatchEvent(new Event("change"));$("adminTrackingForm").classList.remove("hidden");}
+ const openProject=e.target.closest("[data-open-project]");if(openProject)openAdminProject(openProject.dataset.openProject);
  const fin=e.target.closest("[data-finalize]");if(fin)finalizeProject(fin.dataset.finalize);
 });
 db.auth.onAuthStateChange((event,session)=>{if(session?.user)setTimeout(start,0)});
