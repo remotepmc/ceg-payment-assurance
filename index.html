@@ -557,7 +557,7 @@ function openClientSubmittedProject(projectId){
  $("projectBillingDelayReason").value=p.billing_delay_reason||"";
  $("projectPaymentDelayReason").value=p.payment_delay_reason||"";
  $("projectRemarks").value=p.client_remarks||"";
- const savedService=p.service_details||"";if(savedService&&!Array.from($("projectServiceDetails").options).some(o=>o.value===savedService))$("projectServiceDetails").add(new Option(savedService+" (existing saved value)",savedService));$("projectServiceDetails").value=savedService;$("projectMoneyLeakage").value=p.money_leakage??"";
+ const savedService=p.service_details||"";if(savedService&&!Array.from($("projectServiceDetails").options).some(o=>o.value===savedService)){const legacyOption=new Option(savedService+" (existing saved value)",savedService);legacyOption.dataset.legacyService="true";$("projectServiceDetails").add(legacyOption);}$("projectServiceDetails").value=savedService;$("projectMoneyLeakage").value=p.money_leakage??"";
  $("projectCodePreview").textContent="Project ID: "+(p.project_code||"");$("projectCodePreview").dataset.projectCode=p.project_code||"";$("projectCodePreview").classList.remove("hidden");
 
  $("adminSubmissionList").classList.add("hidden");
