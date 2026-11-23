@@ -316,8 +316,12 @@ async function login(){
  const loginId=$("email").value.trim();
  const digits=loginId.replace(/\D/g,"");
  const credentials=loginId.includes("@")?{email:loginId,password:$("password").value}:{phone:digits.length===10?"+91"+digits:normalizedPhone(loginId),password:$("password").value};
- const {error}=await db.auth.signInWithPassword(credentials);
- if(error)$("message").textContent=error.message;
+ try{
+  const {error}=await db.auth.signInWithPassword(credentials);
+  if(error){$("message").textContent=error.message;return}
+  $("message").textContent="Login successful. Opening your workspace...";
+  await start();
+ }catch(error){$("message").textContent="Login could not complete: "+(error?.message||"Please try again.");}
 }
 async function sendWhatsAppOtp(){
  const loginId=$("email").value.trim();
@@ -332,8 +336,12 @@ async function verifyWhatsAppOtp(){
  const token=$("phoneOtp").value.trim();
  if(token.length!==6){$("message").textContent="Enter the 6-digit OTP.";return}
  $("message").textContent="Verifying OTP...";
- const {error}=await db.auth.verifyOtp({phone,token,type:"sms"});
- if(error)$("message").textContent=error.message;
+ try{
+  const {error}=await db.auth.verifyOtp({phone,token,type:"sms"});
+  if(error){$("message").textContent=error.message;return}
+  $("message").textContent="OTP verified. Opening your workspace...";
+  await start();
+ }catch(error){$("message").textContent="OTP login could not complete: "+(error?.message||"Please try again.");}
 }
 async function signup(){
  const loginId=$("email").value.trim(),password=$("password").value;
@@ -345,7 +353,10 @@ async function signup(){
 }
 async function logout(){await db.auth.signOut();location.reload()}
 
-async function start(){
+let startPromise=null;
+function start(){
+ if(startPromise)return startPromise;
+ startPromise=(async()=>{
  const {data:{user:u}}=await db.auth.getUser();
  if(!u)return;
  user=u;
@@ -373,6 +384,12 @@ async function start(){
   $("projectForm").classList.add("hidden");
  }
  $("staff").classList.remove("hidden");
+ })().catch(error=>{
+  $("message").textContent="Login succeeded, but the workspace could not load: "+(error?.message||"Unknown error");
+  console.error("CEG workspace startup failed:",error);
+  return false;
+ }).finally(()=>{startPromise=null;});
+ return startPromise;
 }
 
 async function load(){
