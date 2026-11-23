@@ -400,12 +400,12 @@ function start(){
  $("auth").classList.add("hidden");
  $("app").classList.remove("hidden");
  $("welcome").textContent=isAdmin()?"Welcome Admin":"Welcome Client";
- $("roleText").textContent="Account role: "+profile.role.replaceAll("_"," ");
+ $("roleText").textContent=isAdmin()?"Account role: "+profile.role.replaceAll("_"," "):"";
  document.body.classList.toggle("client-view",!isAdmin());
   document.body.classList.toggle("admin-view",isAdmin());
  $("dashboardTitle").textContent=isAdmin()?"Admin Control Centre":"My Project Portal";
  $("dashboardDescription").textContent=isAdmin()?"Manage entries, revisions, final approvals and payments.":"Create projects, follow revisions and view final approvals."; 
- $("rolePill").textContent=isAdmin()?"ADMIN · FULL CONTROL":"CLIENT · MY PROJECTS ONLY";
+ $("rolePill").textContent=isAdmin()?"ADMIN · FULL CONTROL":"";
  $("headerSubtitle").textContent=isAdmin()?"Admin workspace · Project and payment control":"Client portal · Your projects and payment updates";
  await load();
  if(isAdmin()){
