@@ -347,7 +347,7 @@ const EXPECTED_OFFSETS=[2,15,45,90,200,400];
 function addDaysISO(start,days){if(!start)return "";const d=new Date(start+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
 function durationBetween(start,end){if(!start||!end)return 0;return Math.round((Date.parse(end+"T00:00:00Z")-Date.parse(start+"T00:00:00Z"))/86400000)}
 function displayDate(iso){if(!iso)return "";const d=new Date(iso+"T00:00:00Z");return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric",timeZone:"UTC"});}
-function expectedDateOptions(start,selected=""){if(!start)return '<option value="">Select start date first</option>';return '<option value="">Select expected end date</option>'+EXPECTED_OFFSETS.map(days=>{const date=addDaysISO(start,days);const label=displayDate(date);return '<option value="'+date+'" '+(selected===date?'selected':'')+'>'+label+'</option>'}).join("")}
+function expectedDateOptions(start,selected=""){if(!start)return '<option value="">Select start date first</option>';return '<option value="">Select expected end date</option>'+EXPECTED_OFFSETS.map(days=>{const date=addDaysISO(start,days);const parts=date.split("-");const label=parts[2]+"-"+parts[1]+"-"+parts[0];return '<option value="'+date+'" '+(selected===date?'selected':'')+'>'+label+'</option>'}).join("")}
 function refreshExpectedDate(startId,endId,selected=null){const end=$(endId);if(!end)return;const keep=selected===null?end.value:selected;end.innerHTML=expectedDateOptions($(startId).value,keep);if(keep&&![...end.options].some(o=>o.value===keep))end.value="";}
 function calculateExpectedEnd(startId,endId){refreshExpectedDate(startId,endId);}
 function addCalendarDays(iso,days){
