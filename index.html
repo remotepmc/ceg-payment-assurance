@@ -137,6 +137,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Billing Amount with Tax (INR, whole rupees)</label><input id="billingAmount" type="number" min="0" step="1">
 <label>Material Dispatch Date</label><input id="materialDispatch" type="date" data-date-role="dispatch">
 <label>Material Delivered Date</label><input id="materialDelivered" type="date" data-date-role="delivered">
+<p class="muted">Auto-sync: Billing Date = Dispatch Date; Delivered Date = Billing Date + 7 days; Actual End Date follows Delivered Date. You can manually edit Actual End Date when needed.</p>
 
 <button id="saveProject">Save Project</button>
 <button data-close="projectForm" class="secondary">Cancel</button>
@@ -156,6 +157,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Billing Amount with Tax (INR)</label><input id="revBillingAmount" type="number" min="0" step="1">
 <label>Material Dispatch Date</label><input id="revMaterialDispatch" type="date" data-date-role="dispatch">
 <label>Material Delivered Date</label><input id="revMaterialDelivered" type="date" data-date-role="delivered">
+<p class="muted">Auto-sync: Billing Date = Dispatch Date; Delivered Date = Billing Date + 7 days; Actual End Date follows Delivered Date. You can manually edit Actual End Date when needed.</p>
 
 <label>Execution / WIP Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
@@ -574,7 +576,7 @@ async function saveClientProject(projectId){
   project_hold:val("ce_hold")==="true",billing_done:val("ce_billed")==="true",
   billing_date:billingDate||null,billing_amount_with_tax:amount,
   project_value:amount??0,material_dispatch_date:val("ce_dispatch")||null,
-  material_delivered_date:val("ce_delivered")||null,
+  material_delivered_date:deliveredDate||null,
  };
  if(!changes.project_name||!changes.project_type||!changes.project_start_date||changes.expected_duration_days<=0||!changes.expected_project_end_date){
   alert("Project Name, Type, Start Date, Expected Duration and Expected End Date are required.");return;
@@ -644,8 +646,8 @@ async function saveAdminTracking(){
   project_start_date:$("revProjectStart").value||null,
    expected_duration_days:durationBetween($("revProjectStart").value,$("revExpectedProjectEnd").value),
    expected_project_end_date:$("revExpectedProjectEnd").value||null,
-   actual_project_end_date:$("revProjectEnd").value||null,
-  project_end_date:$("revProjectEnd").value||null,
+   actual_project_end_date:$("revProjectEnd").value||$("revMaterialDelivered").value||addCalendarDays($("revMaterialDispatch").value,7)||null,
+  project_end_date:$("revProjectEnd").value||$("revMaterialDelivered").value||addCalendarDays($("revMaterialDispatch").value,7)||null,
   project_hold:$("revProjectHold").value==="true",
   wip_delay_reason:$("revWipReason").value||null,
   billing_done:$("revBillingDone").value==="true",
