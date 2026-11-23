@@ -115,14 +115,14 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <button data-close="clientForm" class="secondary">Cancel</button>
 </div>
 <div id="projectForm" class="panel hidden">
-<h3>Register Project</h3>
+<h3>Add Project</h3>
 <div id="projectClientAdminOnly"><label>Select Client</label><select id="projectClient"></select></div>
 <label>Project Name</label><input id="projectName">
 <label>Project Type</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
 <label>Project Start Date</label><input id="projectStart" type="date">
 <label>Project End Date</label><input id="projectEnd" type="date">
 <label>Project Hold</label><select id="projectHold"><option value="false">No</option><option value="true">Yes</option></select>
-<label>Project Execution / WIP Delay Reason</label><select id="wipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
+
 <label>Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
 <label>Billing Date</label><input id="billingDate" type="date">
 <label>Billing Amount with Tax (INR, whole rupees)</label><input id="billingAmount" type="number" min="0" step="1">
@@ -390,7 +390,7 @@ function render(){
   const badge=(label,item,reason)=>item.days===null?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
   const adminActions=isAdmin()&&p.workflow_stage!=="final"?`<p><button data-revise="${p.id}">Open Add Revision</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:"";
-  return `<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name)}</b><p>Revision: ${Number(p.revision_no||1)} | Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | End: ${esc(p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p><p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p><p>${badge("Execution delay",d.execution,t.project_delay_reason)} ${badge("Billing delay",d.billing,t.billing_delay_reason)} ${badge("Payment delay",d.payment,t.payment_delay_reason)}</p><p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p><div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div><details><summary>Revision History (${projectRevisions.filter(r=>r.project_id===p.id).length})</summary><ol>${history||"<li>No history recorded</li>"}</ol></details>${adminActions}</div>`;
+  return `<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name)}</b><p>Revision: ${Number(p.revision_no||1)} | Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | End: ${esc(p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p>${isAdmin()?`<p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p><p>${badge("Execution delay",d.execution,t.project_delay_reason)} ${badge("Billing delay",d.billing,t.billing_delay_reason)} ${badge("Payment delay",d.payment,t.payment_delay_reason)}</p><p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p>`:`<p><span class="status ${p.workflow_stage==="final"?"green":"yellow"}">${p.workflow_stage==="final"?"Final Project Approved":"Under Admin Review"}</span></p>`}<div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div><details><summary>Revision History (${projectRevisions.filter(r=>r.project_id===p.id).length})</summary><ol>${history||"<li>No history recorded</li>"}</ol></details>${adminActions}</div>`;
  };
  const pendingProjects=projects.filter(p=>p.workflow_stage!=="final");
  const finalProjects=projects.filter(p=>p.workflow_stage==="final");
@@ -454,7 +454,7 @@ async function addProject(){
  
  const clientId=$("projectClient").value;
  if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value){alert("Save an Add Entry first, then select your entry and enter project name and type.");return}
- const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",wip_delay_reason:$("wipReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("*").single();
  if(error){alert(error.message);return}
  const {error:historyError}=await db.from("project_revisions").insert({project_id:data.id,revision_no:1,revision_type:"submission",revision_data:data,revision_note:"Initial project submitted for Admin review",created_by:user.id});
