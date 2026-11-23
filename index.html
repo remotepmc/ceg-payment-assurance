@@ -217,9 +217,11 @@ async function login(){
  if(error)$("message").textContent=error.message;
 }
 async function signup(){
- const email=$("email").value.trim(),password=$("password").value;
- if(!email||password.length<6){$("message").textContent="Enter email and a password of at least 6 characters.";return}
- const {data,error}=await db.auth.signUp({email,password,options:{data:{full_name:$("fullName").value.trim()}}});
+ const loginId=$("email").value.trim(),password=$("password").value;
+ if(!loginId||password.length<6){$("message").textContent="Enter email or mobile number and a password of at least 6 characters.";return}
+ const digits=loginId.replace(/\D/g,"");
+ const identity=loginId.includes("@")?{email:loginId}:{phone:digits.length===10?"+91"+digits:loginId};
+ const {data,error}=await db.auth.signUp({...identity,password,options:{data:{full_name:$("fullName").value.trim()}}});
  $("message").textContent=error?error.message:(data.session?"Account created.":"Account created. Check your email for confirmation, then log in.");
 }
 async function logout(){await db.auth.signOut();location.reload()}
