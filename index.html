@@ -514,7 +514,7 @@ function render(){
   <label>Project Type</label><select id="ce_type_${p.id}"><option value="">Select project type</option>${["Civil","Interior Furniture","Materials Supply","Design Drawing","Skill Training"].map(x=>`<option ${p.project_type===x?"selected":""}>${x}</option>`).join("")}</select>
   <label>Project Start Date</label><input id="ce_start_${p.id}" type="date" value="${esc(p.project_start_date||"")}" data-start-for="ce_expected_${p.id}">
   <label>Expected Project End Date</label><select id="ce_expected_${p.id}" data-expected-end>${expectedDateOptions(p.project_start_date,p.expected_project_end_date)}</select>
-  <label>Actual Project End Date</label><input id="ce_actual_${p.id}" type="date" value="${esc(p.actual_project_end_date||p.project_end_date||"")}" data-date-role="actual" data-date-suffix="_${p.id}">
+  <label>Actual Project End Date</label><input id="ce_actual_${p.id}" type="date" value="${esc(p.material_delivered_date||p.actual_project_end_date||p.project_end_date||"")}" data-date-role="actual" data-date-suffix="_${p.id}">
   <label>Project Hold</label><select id="ce_hold_${p.id}"><option value="false" ${!p.project_hold?"selected":""}>No</option><option value="true" ${p.project_hold?"selected":""}>Yes</option></select>
   <label>Billing Done</label><select id="ce_billed_${p.id}"><option value="false" ${!p.billing_done?"selected":""}>No</option><option value="true" ${p.billing_done?"selected":""}>Yes</option></select>
   <label>Billing Date</label><input id="ce_billdate_${p.id}" type="date" value="${esc(p.billing_date||"")}" data-date-role="billing" data-date-suffix="_${p.id}">
@@ -758,7 +758,7 @@ $("trackingProject").onchange=()=>{
  $("revProjectType").value=p.project_type||"";
  $("revProjectStart").value=p.project_start_date||"";
   refreshExpectedDate("revProjectStart","revExpectedProjectEnd",p.expected_project_end_date||"");
- $("revProjectEnd").value=p.actual_project_end_date||p.project_end_date||"";
+ $("revProjectEnd").value=p.material_delivered_date||p.actual_project_end_date||p.project_end_date||"";
  $("revProjectHold").value=String(!!p.project_hold);
  $("revWipReason").value=p.wip_delay_reason||"";
  $("revBillingDone").value=String(!!p.billing_done);
@@ -774,6 +774,7 @@ $("trackingProject").onchange=()=>{
 };
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
+ document.addEventListener("input",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.id,suffix);});
  document.addEventListener("change",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.id,suffix);});
   $("projectStart").addEventListener("change",()=>calculateExpectedEnd("projectStart","expectedProjectEnd"));
  $("revProjectStart").addEventListener("change",()=>calculateExpectedEnd("revProjectStart","revExpectedProjectEnd"));
