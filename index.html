@@ -544,7 +544,7 @@ function openClientSubmittedProject(projectId){
  $("projectStart").value=p.project_start_date||"";
  refreshExpectedDate("projectStart","expectedProjectEnd",p.expected_project_end_date||"");
  $("projectEnd").value=p.actual_project_end_date||p.project_end_date||"";
- $("projectHold").value=String(!!p.project_hold);
+ if($("projectHold"))$("projectHold").value=String(!!p.project_hold);
  $("projectWipReason").value=p.wip_delay_reason||"";
  $("billingDone").value=String(!!p.billing_done);
  $("billingDate").value=p.billing_date||"";
@@ -583,7 +583,7 @@ async function saveClientSubmittedProject(publishAfterSave=false){
   expected_project_end_date:$("expectedProjectEnd").value,
   actual_project_end_date:$("projectEnd").value||null,
   project_end_date:$("projectEnd").value||null,
-  project_hold:$("projectHold").value==="true",
+  project_hold:$("projectHold")?$("projectHold").value==="true":!!original.project_hold,
   wip_delay_reason:$("projectWipReason").value||null,
   billing_delay_reason:$("projectBillingDelayReason").value||null,
   payment_delay_reason:$("projectPaymentDelayReason").value||null,
