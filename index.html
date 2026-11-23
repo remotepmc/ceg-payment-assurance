@@ -510,7 +510,7 @@ function renderAdminProjectSummary(){
   const billing=actual?dateDays(actual,p.billing_done&&p.billing_date?p.billing_date:today):null;
   const full=fullCollectionDate(p),target=Number(p.billing_amount_with_tax??p.project_value??0),verified=paid(p.id);
   const payment=p.billing_date&&target>0?(full?dateDays(p.billing_date,full):verified<target?dateDays(p.billing_date,today):0):null;
-  const vals=[company.company_name||"—",p.project_code||"—",displayDate(p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—",p.service_details||"—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
+  const vals=[company.company_name||"—",p.project_code||"—",displayDate(p.ceg_date||p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—",p.service_details||"—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
   return '<tr>'+vals.map((v,i)=>'<td>'+(i===1?'<button type="button" class="secondary" data-edit-admin-summary="'+esc(p.id)+'">Edit · '+esc(v)+'</button>':esc(v))+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>';
  }).join("");
 }
@@ -690,7 +690,7 @@ function renderClientProjectSummary(){
   const full=fullCollectionDate(p),target=Number(p.billing_amount_with_tax??p.project_value??0),verified=paid(p.id);
   const payment=p.billing_date&&target>0?(full?projectAgingDays(p.billing_date,full):verified<target?projectAgingDays(p.billing_date,today):0):null;
   const company=companies.find(x=>x.id===c.company_id)||{};
-  const vals=[company.company_name||"—",p.project_code||"—",displayDate(p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—",p.service_details||"—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
+  const vals=[company.company_name||"—",p.project_code||"—",displayDate(p.ceg_date||p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—",p.service_details||"—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
   return '<tr>'+vals.map(v=>'<td>'+esc(v)+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>';
  }).join("");
 }
@@ -1016,7 +1016,7 @@ function reportSummaryRow(project,today){
  const full=fullCollectionDate(project),target=Number(project.billing_amount_with_tax??project.project_value??0),verified=paid(project.id);
  const payment=project.billing_date&&target>0?(full?dateDays(project.billing_date,full):verified<target?dateDays(project.billing_date,today):0):null;
  const totalPayments=pe.reduce((sum,x)=>sum+Number(x.amount||0),0);
- return [company,project.project_code||"—",project.created_at?String(project.created_at).slice(0,10):"",project.project_name||"",project.project_type||"",project.project_start_date||"",expected||"",actual||"",project.wip_delay_reason||"",project.billing_date||"",project.billing_amount_with_tax??project.project_value??"",last?.payment_date||"",totalPayments,project.service_details||"",execution??"",billing??"",payment??"",""];
+ return [company,project.project_code||"—",project.ceg_date|| (project.created_at?String(project.created_at).slice(0,10):""),project.project_name||"",project.project_type||"",project.project_start_date||"",expected||"",actual||"",project.wip_delay_reason||"",project.billing_date||"",project.billing_amount_with_tax??project.project_value??"",last?.payment_date||"",totalPayments,project.service_details||"",execution??"",billing??"",payment??"",""];
 }
 function reportCTArows(finals){
  const rows=[];
@@ -1053,7 +1053,7 @@ function reportMasterRows(finals){
  const headers=["Project ID","1. Company Name","2. CEG Date","3. Project Name","4. Project Type","5. Project Start Date","6. Expected Project End Date","7. Actual Project End Date","8. Project Execution / WIP Delay Reason","9. Billing Done","10. Billing Date","11. Billing Amount with Tax","12. Payment Status","13. Payment Amount","14. Payment Date","15. Material Dispatch Date","16. Material Delivered Date","17. Billing Delay Reason","18. Payment Delay Reason","19. Service Details","20. Money Leakage","21. Remarks","Client Contact Name","Final Published Date"];
  const rows=finals.map(p=>{
   const cl=clients.find(c=>c.id===p.client_id)||{},pe=reportPaymentRows(p),last=pe.length?pe[pe.length-1]:null;
-  return [p.project_code||"",reportCompany(p),p.created_at?String(p.created_at).slice(0,10):"",p.project_name||"",p.project_type||"",p.project_start_date||"",p.expected_project_end_date||"",p.actual_project_end_date||p.project_end_date||"",p.wip_delay_reason||"",p.billing_done?"Yes":"No",p.billing_date||"",p.billing_amount_with_tax??p.project_value??"",last?.payment_type||"",last?.amount??"",last?.payment_date||"",p.material_dispatch_date||"",p.material_delivered_date||"",p.billing_delay_reason||"",p.payment_delay_reason||"",p.service_details||"",p.money_leakage??"",p.client_remarks||"",cl.client_name||"",p.finalized_at?String(p.finalized_at).slice(0,10):""];
+  return [p.project_code||"",reportCompany(p),p.ceg_date|| (p.created_at?String(p.created_at).slice(0,10):""),p.project_name||"",p.project_type||"",p.project_start_date||"",p.expected_project_end_date||"",p.actual_project_end_date||p.project_end_date||"",p.wip_delay_reason||"",p.billing_done?"Yes":"No",p.billing_date||"",p.billing_amount_with_tax??p.project_value??"",last?.payment_type||"",last?.amount??"",last?.payment_date||"",p.material_dispatch_date||"",p.material_delivered_date||"",p.billing_delay_reason||"",p.payment_delay_reason||"",p.service_details||"",p.money_leakage??"",p.client_remarks||"",cl.client_name||"",p.finalized_at?String(p.finalized_at).slice(0,10):""];
  });
  return [headers,...rows];
 }
