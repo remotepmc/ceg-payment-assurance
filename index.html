@@ -414,11 +414,7 @@ function render(){
  const previousTrackingProject=$("trackingProject").value;
  $("trackingProject").innerHTML=pendingProjects.map(p=>'<option value="'+p.id+'">'+esc((p.project_code||"")+ " — "+p.project_name)+'</option>').join("");
  if(pendingProjects.some(p=>p.id===previousTrackingProject))$("trackingProject").value=previousTrackingProject;
- const currentTracking=adminTracking.find(x=>x.project_id===$("trackingProject").value)||{};
- $("editProjectDelayReason").value=currentTracking.project_delay_reason||"";
- $("editBillingDelayReason").value=currentTracking.billing_delay_reason||"";
- $("editPaymentDelayReason").value=currentTracking.payment_delay_reason||"";
- $("editCegDesigned").value=currentTracking.ceg_service_designed||"";
+ if($("trackingProject").value)$("trackingProject").dispatchEvent(new Event("change"));
 }
 async function addClient(){
  const name=$("clientName").value.trim(),companyName=$("newCompanyName").value.trim();
