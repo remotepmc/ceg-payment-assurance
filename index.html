@@ -228,7 +228,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 </div>
 
 <div id="adminProjectLists">
-<h3 id="pendingProjectsHeading">Add Revision — Pending Admin Review</h3><div id="projects"></div>
+<h3 id="pendingProjectsHeading">Add Revision — Pending Admin Review</h3><h4>Client Submitted Projects</h4><div id="clientSubmittedRevisionProjects"></div><h4>Admin Created Projects</h4><div id="projects"></div>
 <h3>Final Project</h3><div id="finalProjects"></div>
 </div>
 <div id="adminProjectDetail" class="panel hidden"><div class="row"><h3>Complete Submitted Project</h3><button type="button" id="closeAdminProjectDetail" class="secondary">Close</button></div><div id="adminProjectDetailContent"></div></div>
@@ -477,7 +477,7 @@ async function openAdminProject(projectId){
  const yn=v=>v===true?"Yes":v===false?"No":v??"—";
  const paymentMarkup=payRows.length?payRows.map((x,i)=>'<div class="form-section"><h4>Payment '+(i+1)+'</h4>'+value("Payment Made",x.payment_type)+value("Payment Amount",money(x.amount))+value("Payment Made Date",x.payment_date)+value("Payment Status",x.status)+value("Payment Mode",x.payment_mode)+value("Reference Number",x.reference_number)+value("Notes",x.notes)+'</div>').join(""):'<p class="muted">No payment records linked to this project.</p>';
  $("adminProjectDetailContent").innerHTML=
-  '<p><b>Project ID:</b> '+esc(p.project_code||p.id)+' | <b>Workflow:</b> '+esc(p.workflow_stage||"—")+' | <b>Revision:</b> '+esc(p.revision_no||1)+'</p>'+
+  '<p><b>Project ID:</b> '+esc(p.id)+' | <b>Project Code:</b> '+esc(p.project_code||"—")+' | <b>Workflow:</b> '+esc(p.workflow_stage||"—")+' | <b>Revision:</b> '+esc(p.revision_no||1)+'</p>'+
   '<div class="form-section"><h4>1. Project Details</h4>'+value("Client Name",c.client_name)+value("Client Category",c.client_category)+value("Client Email",c.email)+value("Client Mobile",c.phone)+value("Project Name",p.project_name)+value("Project Type",p.project_type)+'</div>'+
   '<div class="form-section"><h4>2. Project Timeline</h4>'+value("Project Start Date",p.project_start_date)+value("Expected Project End Date",p.expected_project_end_date)+value("Actual Project End Date",p.actual_project_end_date||p.project_end_date)+value("Project Hold",yn(p.project_hold))+value("Project Execution / WIP Delay Reason",p.wip_delay_reason)+'</div>'+
   '<div class="form-section"><h4>3. Billing & Materials</h4>'+value("Billing Done",yn(p.billing_done))+value("Billing Date",p.billing_date)+value("Billing Amount with Tax",money(p.billing_amount_with_tax??p.project_value))+value("Material Dispatch Date",p.material_dispatch_date)+value("Billing Delay Reason",p.billing_delay_reason)+value("Material Delivered Date",p.material_delivered_date)+value("Material Collection Date",p.material_collection_date)+'</div>'+
@@ -581,7 +581,11 @@ function render(){
  $("pendingProjectsHeading").textContent="Add Revision — Pending Admin Review";
  const pendingProjects=projects.filter(p=>p.workflow_stage!=="final");
  const finalProjects=projects.filter(p=>p.workflow_stage==="final");
- const pendingMarkup=pendingProjects.length?pendingProjects.map(renderProjectCard).join(""):"<p class='muted'>No projects awaiting Admin review.</p>";
+ const clientUserIds=new Set(clients.map(c=>c.user_id).filter(Boolean));
+ const clientSubmittedProjects=isAdmin()?pendingProjects.filter(p=>p.created_by&&clientUserIds.has(p.created_by)):[];
+ const adminCreatedPendingProjects=pendingProjects.filter(p=>!clientSubmittedProjects.some(cp=>cp.id===p.id));
+ $("clientSubmittedRevisionProjects").innerHTML=clientSubmittedProjects.length?clientSubmittedProjects.map(p=>"<div class=\"project\"><p><span class=\"status yellow\">CLIENT SUBMITTED · WAITING FOR ADMIN REVIEW</span></p><p><b>Project ID:</b> "+esc(p.id)+"</p>"+renderProjectCard(p)+"</div>").join(""):"<p class='muted'>No client-submitted projects awaiting Admin review.</p>";
+ const pendingMarkup=adminCreatedPendingProjects.length?adminCreatedPendingProjects.map(renderProjectCard).join(""):"<p class='muted'>No Admin-created projects awaiting review.</p>";
  const finalMarkup=finalProjects.length?finalProjects.map(renderProjectCard).join(""):"<p class='muted'>No final projects approved yet.</p>";
  $("projects").innerHTML=pendingMarkup;
  $("finalProjects").innerHTML=finalMarkup;
