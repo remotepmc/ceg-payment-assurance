@@ -181,6 +181,8 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Billing Amount with Tax (INR)</label><input id="revBillingAmount" type="number" min="0" step="1">
 <label>Material Dispatch Date</label><input id="revMaterialDispatch" type="date" data-date-role="dispatch">
 <label>Material Delivered Date</label><input id="revMaterialDelivered" type="date" data-date-role="delivered">
+<label>Billing Delay Reason</label><select id="revBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
+<label>Client Comments / Remarks</label><textarea id="revClientRemarks"></textarea>
 <p class="muted">Auto-sync: Billing Date = Dispatch Date; Delivered Date = Billing Date + 7 days; Actual End Date follows Delivered Date. You can manually edit Actual End Date when needed.</p>
 
 <label>Execution / WIP Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
@@ -478,6 +480,7 @@ async function openAdminProject(projectId){
  const paymentMarkup=payRows.length?payRows.map((x,i)=>'<div class="form-section"><h4>Payment '+(i+1)+'</h4>'+value("Payment Made",x.payment_type)+value("Payment Amount",money(x.amount))+value("Payment Made Date",x.payment_date)+value("Payment Status",x.status)+value("Payment Mode",x.payment_mode)+value("Reference Number",x.reference_number)+value("Notes",x.notes)+'</div>').join(""):'<p class="muted">No payment records linked to this project.</p>';
  $("adminProjectDetailContent").innerHTML=
   '<p><b>Project ID:</b> '+esc(p.id)+' | <b>Project Code:</b> '+esc(p.project_code||"—")+' | <b>Workflow:</b> '+esc(p.workflow_stage||"—")+' | <b>Revision:</b> '+esc(p.revision_no||1)+'</p>'+
+  '<p><button type="button" data-edit-project="'+esc(p.id)+'">Edit This Project</button></p>'+
   '<div class="form-section"><h4>1. Project Details</h4>'+value("Client Name",c.client_name)+value("Client Category",c.client_category)+value("Client Email",c.email)+value("Client Mobile",c.phone)+value("Project Name",p.project_name)+value("Project Type",p.project_type)+'</div>'+
   '<div class="form-section"><h4>2. Project Timeline</h4>'+value("Project Start Date",p.project_start_date)+value("Expected Project End Date",p.expected_project_end_date)+value("Actual Project End Date",p.actual_project_end_date||p.project_end_date)+value("Project Hold",yn(p.project_hold))+value("Project Execution / WIP Delay Reason",p.wip_delay_reason)+'</div>'+
   '<div class="form-section"><h4>3. Billing & Materials</h4>'+value("Billing Done",yn(p.billing_done))+value("Billing Date",p.billing_date)+value("Billing Amount with Tax",money(p.billing_amount_with_tax??p.project_value))+value("Material Dispatch Date",p.material_dispatch_date)+value("Billing Delay Reason",p.billing_delay_reason)+value("Material Delivered Date",p.material_delivered_date)+value("Material Collection Date",p.material_collection_date)+'</div>'+
@@ -694,6 +697,8 @@ async function saveAdminTracking(){
   project_value:$("revBillingAmount").value===""?0:Number($("revBillingAmount").value),
   material_dispatch_date:$("revMaterialDispatch").value||null,
   material_delivered_date:$("revMaterialDelivered").value||addCalendarDays($("revMaterialDispatch").value,7)||null,
+  billing_delay_reason:$("revBillingDelayReason").value||null,
+  client_remarks:$("revClientRemarks").value.trim()||null
  };
  if(!projectChanges.project_name||!projectChanges.project_type||!projectChanges.project_start_date||projectChanges.expected_duration_days<=0||!projectChanges.expected_project_end_date){alert("Project Name, Project Type, Start Date and Expected Project End Date are mandatory.");return}
  const {error:projectEditError}=await db.from("projects").update(projectChanges).eq("id",projectId);
@@ -800,6 +805,8 @@ $("trackingProject").onchange=()=>{
  $("revBillingAmount").value=p.billing_amount_with_tax??p.project_value??"";
  $("revMaterialDispatch").value=p.material_dispatch_date||"";
  $("revMaterialDelivered").value=p.material_delivered_date||"";
+ $("revBillingDelayReason").value=p.billing_delay_reason||"";
+ $("revClientRemarks").value=p.client_remarks||"";
  if($("revMaterialDelivered").value) syncMaterialDateChain("revMaterialDelivered");
  $("editProjectDelayReason").value=t.project_delay_reason||"";
  $("editBillingDelayReason").value=t.billing_delay_reason||"";
@@ -838,6 +845,7 @@ document.addEventListener("click",e=>{
  const v=e.target.closest("[data-verify]");if(v)verify(v.dataset.verify,v.dataset.status);
  const rev=e.target.closest("[data-revise]");if(rev){$("trackingProject").value=rev.dataset.revise;$("trackingProject").dispatchEvent(new Event("change"));$("adminTrackingForm").classList.remove("hidden");}
  const openProject=e.target.closest("[data-open-project]");if(openProject)openAdminProject(openProject.dataset.openProject);
+ const editProject=e.target.closest("[data-edit-project]");if(editProject){$("trackingProject").value=editProject.dataset.editProject;$("trackingProject").dispatchEvent(new Event("change"));$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
  const fin=e.target.closest("[data-finalize]");if(fin)finalizeProject(fin.dataset.finalize);
 });
 db.auth.onAuthStateChange((event,session)=>{if(session?.user)setTimeout(start,0)});
