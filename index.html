@@ -91,24 +91,24 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 
 <section id="staff" class="hidden">
 <div class="actions">
-<button id="adminAddEntryBtn" data-toggle="clientForm">+ Add New Entry</button>
-<button id="addProjectBtn" data-toggle="projectForm">+ Add Project</button>
+<button id="addEntryBtn" data-toggle="clientForm">+ Add Entry</button>
+<button id="addProjectBtn" data-toggle="projectForm" disabled title="Complete Add Entry first">+ Add Project (locked)</button>
 <button id="adminTrackingBtn" data-toggle="adminTrackingForm">Update Admin Delays</button>
 <button id="recordPaymentBtn" data-toggle="paymentForm">+ Submit / Record Payment</button>
 <button id="exportBtn" class="secondary">Export Report</button>
 <button id="refreshBtn" class="secondary">Refresh</button>
 </div>
+<p id="projectLockNote" class="notice">Add Entry must be saved successfully before Add Project is unlocked.</p>
 <div id="clientForm" class="panel hidden">
-<h3>Add New Entry</h3>
-<label>Select Existing Company (optional)</label><select id="clientCompany"></select>
-<label>Or Enter New Company Name</label><input id="newCompanyName" placeholder="Enter new company name">
-<label>Company / Client Name</label><input id="clientName">
-<label>Category</label><select id="clientCategory">
+<h3>Add Entry</h3>
+<label>Client Name *</label><input id="clientName" required placeholder="Enter client / contact name">
+<label>Name of Company *</label><input id="newCompanyName" required placeholder="e.g. Building Materials, JRS or TKS">
+<label>Category *</label><select id="clientCategory" required>
 <option value="">Select category</option><option>Individual</option><option>Contractor Civil</option><option>Contractor Interior</option><option>Architect</option><option>Interior Designer</option><option>Builder</option><option>SCM-WS</option><option>SCM-Ret</option><option>Manufacturer</option>
 </select>
-<label>Client Login Email (optional)</label><input id="clientEmail" type="email" placeholder="Enter email if available">
-<label>Client Mobile Number</label><input id="clientPhone" type="tel" placeholder="10-digit mobile number">
-<p class="muted">Enter either email or mobile number. The client must create their login using the same detail.</p>
+<label>Email *</label><input id="clientEmail" type="email" required placeholder="Enter email address">
+<label>Mobile Number *</label><input id="clientPhone" type="tel" inputmode="tel" required placeholder="10-digit mobile number">
+<p class="muted">All five fields are mandatory. Use the same email and mobile number registered for this account.</p>
 <button id="saveClient">Save Entry</button>
 <button data-close="clientForm" class="secondary">Cancel</button>
 </div>
@@ -389,7 +389,7 @@ function render(){
   return `<div class="project"><b>${money(p.amount)}</b><p>${esc(project?.project_name||"Project")} | ${esc(p.payment_date||"")}</p><p>${esc(p.payment_mode||"")} | Ref: ${esc(p.reference_number||"Not provided")}</p><span class="badge">${esc(p.status)}</span>${buttons}</div>`;
  }).join(""):"<p class='muted'>No payment records yet.</p>";
   const admin=isAdmin();
- $("adminAddEntryBtn").classList.toggle("hidden",!admin);
+ $("addEntryBtn").classList.remove("hidden");
  $("adminTrackingBtn").classList.toggle("hidden",!admin);
   $("exportBtn").classList.toggle("hidden",!admin);
  $("recordPaymentBtn").classList.toggle("hidden",!admin&&projects.length===0);
@@ -397,33 +397,47 @@ function render(){
  $("paymentForm").querySelector("h3").textContent=admin?"Record Payment":"Submit Payment Details";
  $("adminClientListSection").classList.toggle("hidden",!admin);
  $("adminProjectFields").classList.toggle("hidden",!admin);
- $("projectClientAdminOnly").classList.toggle("hidden",!admin);
- $("addProjectBtn").classList.toggle("hidden",!admin&&clients.length===0);
+ $("projectClientAdminOnly").classList.remove("hidden");
+ $("addProjectBtn").disabled=clients.length===0;
+ $("addProjectBtn").textContent=clients.length?" + Add Project":"+ Add Project (locked)";
+ $("projectLockNote").classList.toggle("hidden",clients.length>0);
  $("projectClient").innerHTML=clients.map(c=>'<option value="'+c.id+'">'+esc(c.client_name)+'</option>').join("");
- if(!admin&&clients.length) $("projectClient").value=clients[0].id;
+ $("projectClient").value=clients[0]?.id||"";
  $("paymentProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc(p.project_name)+'</option>').join("");
  $("clientCompany").innerHTML='<option value="">Select company</option>'+companies.map(c=>'<option value="'+c.id+'">'+esc(c.company_name)+'</option>').join("");
  $("trackingProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc(p.project_name)+'</option>').join("");
 }
 async function addClient(){
- const name=$("clientName").value.trim(),newCompany=$("newCompanyName").value.trim();
- const clientEmail=$("clientEmail").value.trim();
- if(!name||!$("clientCategory").value||!clientEmail){alert("Enter client name, category and client login email");return}
- let companyId=$("clientCompany").value||null;
- if(newCompany){
-  const {data:company,error:companyError}=await db.from("companies").insert({company_name:newCompany,created_by:user.id}).select("id").single();
+ const name=$("clientName").value.trim(),companyName=$("newCompanyName").value.trim();
+ const clientEmail=$("clientEmail").value.trim().toLowerCase();
+ const phoneDigits=$("clientPhone").value.replace(/\D/g,"");
+ const phone=phoneDigits.length===10?"+91"+phoneDigits:phoneDigits.length>10?"+"+phoneDigits:"";
+ const category=$("clientCategory").value;
+ if(!name||!companyName||!category||!clientEmail||!phoneDigits||phoneDigits.length<10){alert("Complete all five mandatory fields: Client Name, Name of Company, Category, Email and Mobile Number.");return}
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)){alert("Enter a valid email address.");return}
+ let companyId=null;
+ const {data:existingCompany,error:findCompanyError}=await db.from("companies").select("id").ilike("company_name",companyName).limit(1).maybeSingle();
+ if(findCompanyError){alert("Company lookup failed: "+findCompanyError.message);return}
+ if(existingCompany)companyId=existingCompany.id;
+ else{
+  const {data:company,error:companyError}=await db.from("companies").insert({company_name:companyName,created_by:user.id}).select("id").single();
   if(companyError){alert("Company could not be saved: "+companyError.message);return}
   companyId=company.id;
  }
- const {error}=await db.from("clients").insert({client_name:name,company_id:companyId,client_category:$("clientCategory").value,email:clientEmail,phone:clientPhone?(clientPhone.replace(/\D/g,"").length===10?"+91"+clientPhone.replace(/\D/g,""):clientPhone):null,created_by:user.id});
- if(error){alert("Client could not be saved: "+error.message);return}
- $("newCompanyName").value="";alert("Entry saved");hideForms();await load();
+ const payload={client_name:name,company_id:companyId,client_category:category,email:clientEmail,phone,created_by:user.id};
+ if(!isAdmin())payload.user_id=user.id;
+ const {error}=await db.from("clients").insert(payload);
+ if(error){alert("Entry could not be saved: "+error.message);return}
+ ["clientName","newCompanyName","clientEmail","clientPhone"].forEach(id=>$(id).value="");
+ $("clientCategory").value="";
+ alert("Entry saved successfully. Add Project is now available.");
+ hideForms();await load();
 }
 async function addProject(){
  const name=$("projectName").value.trim(),billing= $("billingAmount").value;
- const linkedClient=clients.find(c=>c.user_id===user.id);
- const clientId=isAdmin()?$("projectClient").value:linkedClient?.id;
- if(!clientId||!name||!$("projectType").value){alert("A linked client account, project name and project type are required");return}
+ 
+ const clientId=$("projectClient").value;
+ if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value){alert("Save an Add Entry first, then select your entry and enter project name and type.");return}
  const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",wip_delay_reason:$("wipReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("id").single();
  if(error){alert(error.message);return}
