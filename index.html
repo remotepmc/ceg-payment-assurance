@@ -45,6 +45,15 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 #recordsTable th{background:#eaf1fa;color:#173d6b;position:sticky;top:0;z-index:1;white-space:normal;min-width:105px;max-width:125px;line-height:1.25;vertical-align:bottom;overflow-wrap:break-word}
 .filters{display:grid;grid-template-columns:repeat(2,minmax(130px,1fr));gap:8px}
 @media(min-width:700px){.filters{grid-template-columns:repeat(5,minmax(130px,1fr))}}
+
+/* Admin email-style client navigation */
+.records-layout{display:flex;gap:12px;align-items:stretch;margin:12px 0}
+.client-sidebar{width:215px;min-width:215px;background:#fff;border:1px solid #e1e8f0;border-radius:12px;padding:12px;box-shadow:0 2px 8px #0001}
+.client-sidebar h4{margin:5px 8px 12px;font-size:13px;color:#526276}
+.client-nav{display:block;width:100%;margin:3px 0;text-align:left;background:transparent;color:#29415f;border-radius:7px;font-weight:500}
+.client-nav.active{background:#e6effb;color:#124d8d;font-weight:bold}
+.records-main{flex:1;min-width:0}
+@media(max-width:650px){.records-layout{display:block}.client-sidebar{width:100%;min-width:0;margin-bottom:10px}.client-nav{width:auto;display:inline-block}}
 </style>
 </head>
 <body>
@@ -166,7 +175,10 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 </section>
 
 
-<h3>All Records — Excel View</h3>
+<div class="records-layout">
+ <aside id="adminClientSidebar" class="client-sidebar hidden"><h4>CLIENTS DATABASE</h4><div id="adminClientNav"></div></aside>
+ <div class="records-main">
+<h3 id="recordsTitle">All Records — Excel View</h3>
 <div class="panel">
  <div class="filters">
   <input id="recordSearch" placeholder="Search client / project">
@@ -178,6 +190,8 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
  </div>
  <p class="muted" id="recordCount"></p>
  <div class="table-wrap"><table id="recordsTable"><thead id="recordsHead"></thead><tbody id="recordsBody"></tbody></table></div>
+</div>
+ </div>
 </div>
 
 <h3>Projects</h3><div id="projects"></div>
@@ -193,7 +207,7 @@ const SUPABASE_URL="https://wcsnpazppvuwyzohxxpx.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indj c25wYXpwcHZ1d3l6b2h4eHB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzOTc2MDgsImV4cCI6MjExMDk3MzYwOH0.kuS5I3OsPdkX9QsjznWVzaXnAiSZdmau8NmXN4tUpdI".replace(" ","");
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[];
+let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[],activeCompanyId="";
 const staffRoles=["admin","staff"];
 const isStaff=()=>staffRoles.includes(profile?.role);
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
@@ -264,6 +278,14 @@ function delayClass(days,greenAllowed=false){
  return "red";
 }
 
+function renderAdminClientSidebar(){
+ const side=$("adminClientSidebar");
+ if(profile.role!=="admin"){side.classList.add("hidden");return;}
+ side.classList.remove("hidden");
+ const items=[{id:"",name:"All Clients"}].concat(companies.map(c=>({id:c.id,name:c.company_name})));
+ $("adminClientNav").innerHTML=items.map(c=>'<button class="client-nav '+(activeCompanyId===c.id?'active':'')+'" data-client-company="'+esc(c.id)+'">'+esc(c.name)+'</button>').join("");
+ $("recordsTitle").textContent=activeCompanyId?(companies.find(c=>c.id===activeCompanyId)?.company_name||"Company Records")+" — Records":"All Clients — Records";
+}
 function renderRecords(){
  const admin=profile.role==="admin";
  const headers=["Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Project End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Material Collection Date","Total Verified","Outstanding"];
@@ -274,7 +296,7 @@ function renderRecords(){
  const rows=projects.filter(p=>{
   const cl=clients.find(x=>x.id===p.client_id)||{},co=companyById(cl.company_id);
   const search=[cl.client_name,cl.email,p.project_name,p.project_type,co].join(" ").toLowerCase();
-  return (!q||search.includes(q))&&(!fc||cl.company_id===fc)&&(!fl||p.client_id===fl)&&(!fg||(cl.client_category||"")===fg)&&(!ft||(p.project_type||"")===ft)&&(!fh||String(!!p.project_hold)===fh);
+  return (!q||search.includes(q))&&(!activeCompanyId||cl.company_id===activeCompanyId)&&(!fc||cl.company_id===fc)&&(!fl||p.client_id===fl)&&(!fg||(cl.client_category||"")===fg)&&(!ft||(p.project_type||"")===ft)&&(!fh||String(!!p.project_hold)===fh);
  });
  $("recordCount").textContent=rows.length+" records shown";
  $("recordsBody").innerHTML=rows.map(p=>{
@@ -321,7 +343,7 @@ function render(){
   const badge=(label,days,cls)=>days===null||days===undefined?"":`<span class="status ${cls}">${label}: ${days} days</span>`;
   return `<div class="project"><b>${esc(p.project_name)}</b><p>Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | End: ${esc(p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p><p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p>${profile.role==="admin"?badge("Project delay",t.project_delay_days,projectStatus)+badge("Material collection",t.material_collection_delay_days,materialStatus)+badge("Billing to collection",billDays,billStatus):""}<p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p><div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div></div>`;
  }).join(""):"<p class='muted'>No projects available.</p>";
- setupRecordFilters();renderRecords();
+ renderAdminClientSidebar();setupRecordFilters();renderRecords();
  $("clientList").innerHTML=clients.length?clients.map(c=>{const company=companies.find(x=>x.id===c.company_id);return `<div class="project"><b>${esc(c.client_name)}</b><p>Company: ${esc(company?.company_name||"Not linked")} | Category: ${esc(c.client_category||"—")}</p><p>${esc(c.email||"")} ${c.phone?"| "+esc(c.phone):""}</p></div>`}).join(""):"<p class='muted'>No clients registered yet.</p>";
  $("history").innerHTML=payments.length?payments.map(p=>{
   const project=projects.find(x=>x.id===p.project_id);
@@ -427,6 +449,8 @@ $("exportBtn").onclick=exportCSV;
 $("paymentDate").value=new Date().toISOString().slice(0,10);
 if(profile?.role!=="admin")$("adminProjectFields")?.classList.add("hidden");
 document.addEventListener("click",e=>{
+ const companyPick=e.target.closest("[data-client-company]");
+ if(companyPick){activeCompanyId=companyPick.dataset.clientCompany;renderAdminClientSidebar();$("filterCompany").value="";renderRecords();}
  const t=e.target.closest("[data-toggle]");if(t)$(t.dataset.toggle).classList.toggle("hidden");
  const c=e.target.closest("[data-close]");if(c)$(c.dataset.close).classList.add("hidden");
  const v=e.target.closest("[data-verify]");if(v)verify(v.dataset.verify,v.dataset.status);
