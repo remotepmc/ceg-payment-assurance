@@ -168,7 +168,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 </div>
 <div id="adminTrackingForm" class="panel hidden">
 <h3>Add Revision (Admin)</h3>
-<label>Select Project</label><select id="trackingProject"></select>
+<label id="trackingProjectLabel">Select Project</label><select id="trackingProject"></select>
 <label>Project Name</label><input id="revProjectName">
 <label>Project Type</label><select id="revProjectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
 <label>Project Start Date *</label><input id="revProjectStart" type="date" required>
@@ -268,7 +268,7 @@ const SUPABASE_URL="https://wcsnpazppvuwyzohxxpx.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indj c25wYXpwcHZ1d3l6b2h4eHB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzOTc2MDgsImV4cCI6MjExMDk3MzYwOH0.kuS5I3OsPdkX9QsjznWVzaXnAiSZdmau8NmXN4tUpdI".replace(" ","");
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[],projectRevisions=[],activeCompanyId="";
+let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[],projectRevisions=[],activeCompanyId="",adminClientEditProjectId=null;
 const isAdmin=()=>profile?.role==="admin";
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -568,7 +568,8 @@ function render(){
   const fullDate=fullCollectionDate(p),d=delayInfo(p);
   const badge=(label,item,reason)=>item.days===null||item.days<1?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
-  const adminActions=isAdmin()&&p.workflow_stage!=="final"?`<p><button data-revise="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:isAdmin()?`<p><button data-open-project="${p.id}">View Full Details</button></p>`:"";
+  const clientSubmitted=clients.some(x=>x.user_id&&x.user_id===p.created_by);
+  const adminActions=isAdmin()&&p.workflow_stage!=="final"?(clientSubmitted?`<p><button data-edit-client-project="${p.id}">Edit Client Project</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:`<p><button data-revise="${p.id}">Open Add Revision</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Approve Final Project</button></p>`):isAdmin()?`<p><button data-open-project="${p.id}">View Full Details</button></p>`:"";
   const service=t.ceg_service_designed||"Not yet mapped by Admin";
   const legacyService=service==="Previously marked Yes";
   const serviceLabel=legacyService?"Legacy service flag — exact service name not recorded":service;
@@ -677,7 +678,7 @@ async function addProject(){
 }
 async function saveAdminTracking(){
  if(!isAdmin()){alert("Only Admin can add a revision.");return}
- const projectId=$("trackingProject").value;if(!projectId){alert("Select a project");return}
+ const projectId=adminClientEditProjectId||$("trackingProject").value;if(!projectId){alert("Select a project");return}
  const project=projects.find(p=>p.id===projectId);
  if(!project){alert("Project not found. Refresh and try again.");return}
  if(project.workflow_stage==="final"){alert("This project is already final. Reopen it through Admin review before revising.");return}
@@ -712,6 +713,15 @@ async function saveAdminTracking(){
  };
  const {error}=await db.from("project_admin_tracking").upsert(trackingPayload);
  if(error){alert(error.message);return}
+ if(adminClientEditProjectId===projectId){
+  adminClientEditProjectId=null;
+  $("adminTrackingForm").querySelector("h3").textContent="Add Revision (Admin)";
+  $("saveAdminTracking").textContent="Save Revision";
+  $("trackingProjectLabel").classList.remove("hidden");$("trackingProject").classList.remove("hidden");
+  $("revisionNote").value="";hideForms();await load();
+  alert("Client-submitted project updated successfully. Project ID: "+project.id);
+  return;
+ }
  const nextRevision=Number(project.revision_no||1)+1;
  const {error:updateError}=await db.from("projects").update({revision_no:nextRevision,workflow_stage:"revision"}).eq("id",projectId);
  if(updateError){alert("Admin details saved, but project revision number did not update: "+updateError.message);return}
@@ -841,9 +851,10 @@ document.addEventListener("click",e=>{
  const companyPick=e.target.closest("[data-client-company]");
  if(companyPick){activeCompanyId=companyPick.dataset.clientCompany;renderAdminClientSidebar();$("filterCompany").value="";renderRecords();}
  const t=e.target.closest("[data-toggle]");if(t)$(t.dataset.toggle).classList.toggle("hidden");
- const c=e.target.closest("[data-close]");if(c)$(c.dataset.close).classList.add("hidden");
+ const c=e.target.closest("[data-close]");if(c){$(c.dataset.close).classList.add("hidden");if(c.dataset.close==="adminTrackingForm"){adminClientEditProjectId=null;$("trackingProjectLabel").classList.remove("hidden");$("trackingProject").classList.remove("hidden");$("adminTrackingForm").querySelector("h3").textContent="Add Revision (Admin)";$("saveAdminTracking").textContent="Save Revision";}}
  const v=e.target.closest("[data-verify]");if(v)verify(v.dataset.verify,v.dataset.status);
- const rev=e.target.closest("[data-revise]");if(rev){$("trackingProject").value=rev.dataset.revise;$("trackingProject").dispatchEvent(new Event("change"));$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
+ const clientEdit=e.target.closest("[data-edit-client-project]");if(clientEdit){const id=clientEdit.dataset.editClientProject;const p=projects.find(x=>x.id===id);if(!p){alert("Client project not found. Refresh and try again.");return}adminClientEditProjectId=id;if(![...$("trackingProject").options].some(o=>o.value===id))$("trackingProject").add(new Option((p.project_code||"")+" — "+p.project_name,id));$("trackingProject").value=id;$("trackingProject").dispatchEvent(new Event("change"));$("trackingProjectLabel").classList.add("hidden");$("trackingProject").classList.add("hidden");$("adminTrackingForm").querySelector("h3").textContent="Edit Client Submitted Project";$("saveAdminTracking").textContent="Save Project Changes";$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
+ const rev=e.target.closest("[data-revise]");if(rev){adminClientEditProjectId=null;$("trackingProjectLabel").classList.remove("hidden");$("trackingProject").classList.remove("hidden");$("adminTrackingForm").querySelector("h3").textContent="Add Revision (Admin)";$("saveAdminTracking").textContent="Save Revision";$("trackingProject").value=rev.dataset.revise;$("trackingProject").dispatchEvent(new Event("change"));$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
  const openProject=e.target.closest("[data-open-project]");if(openProject)openAdminProject(openProject.dataset.openProject);
  const editProject=e.target.closest("[data-edit-project]");if(editProject){$("trackingProject").value=editProject.dataset.editProject;$("trackingProject").dispatchEvent(new Event("change"));$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
  const fin=e.target.closest("[data-finalize]");if(fin)finalizeProject(fin.dataset.finalize);
