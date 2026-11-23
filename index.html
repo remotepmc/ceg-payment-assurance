@@ -31,6 +31,12 @@ button{padding:12px 15px;border:0;border-radius:8px;background:#1765bd;color:whi
 .notice{background:#fff8e8;padding:12px;border-radius:8px;font-size:12px;color:#795b19}
 .project p{font-size:12px;color:#66768a}
 footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
+.chartbox{background:#fff;border-radius:12px;padding:14px;margin:12px 0;box-shadow:0 2px 8px #0001}
+.barline{display:grid;grid-template-columns:125px 1fr 35px;gap:8px;align-items:center;margin:9px 0;font-size:12px}
+.bartrack{height:10px;background:#edf1f6;border-radius:8px;overflow:hidden}
+.barfill{height:100%;border-radius:8px;background:#1765bd}
+.status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:bold;margin:3px}
+.green{background:#e4f5ec;color:#187449}.yellow{background:#fff4d6;color:#946200}.red{background:#fff0ef;color:#bd3939}.neutral{background:#edf1f6;color:#526276}
 @media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
 </style>
 </head>
@@ -61,6 +67,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <div class="card"><small>Outstanding</small><div class="amount" id="outstanding">₹0</div></div>
 <div class="card"><small>Projects</small><div class="amount" id="count">0</div></div>
 </div>
+<div id="delayDashboard" class="chartbox hidden"></div>
 
 <section id="staff" class="hidden">
 <div class="actions">
@@ -147,7 +154,7 @@ const SUPABASE_URL="https://wcsnpazppvuwyzohxxpx.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indj c25wYXpwcHZ1d3l6b2h4eHB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzOTc2MDgsImV4cCI6MjExMDk3MzYwOH0.kuS5I3OsPdkX9QsjznWVzaXnAiSZdmau8NmXN4tUpdI".replace(" ","");
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-let user=null,profile=null,clients=[],projects=[],payments=[],companies=[];
+let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[];
 const staffRoles=["admin","staff"];
 const isStaff=()=>staffRoles.includes(profile?.role);
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
@@ -183,14 +190,15 @@ async function start(){
 }
 
 async function load(){
- const [c,p,pa,co]=await Promise.all([
+ const [c,p,pa,co,at]=await Promise.all([
   db.from("clients").select("id,client_name,email,phone,user_id,company_id,client_category"),
   db.from("projects").select("id,client_id,project_name,project_value,status,project_type,project_start_date,project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date"),
   db.from("payments").select("id,project_id,amount,payment_date,payment_mode,reference_number,status").order("payment_date",{ascending:false}),
-  isStaff()&&profile.role==="admin"?db.from("companies").select("id,company_name").order("company_name"):{data:[],error:null}
+  profile.role==="admin"?db.from("companies").select("id,company_name").order("company_name"):{data:[],error:null},
+  profile.role==="admin"?db.from("project_admin_tracking").select("*"):{data:[],error:null}
  ]);
- for(const x of [c,p,pa,co])if(x.error){alert(x.error.message);return}
- clients=c.data||[];projects=p.data||[];payments=pa.data||[];companies=co.data||[];
+ for(const x of [c,p,pa,co,at])if(x.error){alert(x.error.message);return}
+ clients=c.data||[];projects=p.data||[];payments=pa.data||[];companies=co.data||[];adminTracking=at.data||[];
  if(!isStaff()){
   const ids=clients.filter(x=>x.user_id===user.id).map(x=>x.id);
   projects=projects.filter(x=>ids.includes(x.client_id));
@@ -201,6 +209,21 @@ async function load(){
  render();
 }
 function paid(id){return payments.filter(p=>p.project_id===id&&p.status==="verified").reduce((s,p)=>s+Number(p.amount),0)}
+function fullCollectionDate(project){
+ const target=Number(project.billing_amount_with_tax||project.project_value||0);
+ if(!target)return project.payment_received_full_date||null;
+ const entries=payments.filter(x=>x.project_id===project.id&&x.status==="verified").slice().sort((a,b)=>String(a.payment_date).localeCompare(String(b.payment_date)));
+ let sum=0;for(const item of entries){sum+=Number(item.amount||0);if(sum>=target)return item.payment_date}
+ return project.payment_received_full_date||null;
+}
+function delayClass(days,greenAllowed=false){
+ if(days===null||days===undefined||days==="")return "neutral";
+ const n=Number(days);
+ if(greenAllowed&&n<=7)return "green";
+ if(n<=7)return "neutral";
+ if(n<=15)return "yellow";
+ return "red";
+}
 function render(){
  const total=projects.reduce((s,p)=>s+Number(p.project_value||0),0);
  const collected=projects.reduce((s,p)=>s+paid(p.id),0);
@@ -208,10 +231,27 @@ function render(){
  $("collected").textContent=money(collected);
  $("outstanding").textContent=money(total-collected);
  $("count").textContent=projects.length;
+ if(profile.role==="admin"){
+  const projectYellow=adminTracking.filter(x=>Number(x.project_delay_days)>7&&Number(x.project_delay_days)<=15).length;
+  const projectRed=adminTracking.filter(x=>Number(x.project_delay_days)>15).length;
+  const billingYellow=adminTracking.filter(x=>Number(x.billing_delay_days)>7&&Number(x.billing_delay_days)<=15).length;
+  const billingRed=adminTracking.filter(x=>Number(x.billing_delay_days)>15).length;
+  const materialYellow=adminTracking.filter(x=>Number(x.material_collection_delay_days)>7&&Number(x.material_collection_delay_days)<=15).length;
+  const materialRed=adminTracking.filter(x=>Number(x.material_collection_delay_days)>15).length;
+  const bar=(label,y,r)=>`<div class="barline"><span>${label}</span><div class="bartrack"><div class="barfill" style="width:${Math.min(100,(y+r)/Math.max(1,projects.length)*100)}%;background:linear-gradient(90deg,#d6a21d 0 50%,#d74646 50% 100%)"></div></div><b>${y+r}</b></div>`;
+  $("delayDashboard").classList.remove("hidden");
+  $("delayDashboard").innerHTML="<b>Delay ageing overview</b>"+bar("Project delay",projectYellow,projectRed)+bar("Billing delay",billingYellow,billingRed)+bar("Material collection",materialYellow,materialRed)+"<p class='muted'>Yellow: 8–15 days · Red: 16+ days. Green is reserved for billing-to-final-payment collection within 7 days.</p>";
+ }
  $("projects").innerHTML=projects.length?projects.map(p=>{
   const c=clients.find(x=>x.id===p.client_id),v=Number(p.project_value||0),got=paid(p.id);
   const percent=v>0?Math.min(100,got/v*100):0;
-  return `<div class="project"><b>${esc(p.project_name)}</b><p>Client: ${esc(c?.client_name||"Client")}</p><p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p><div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div></div>`;
+  const t=adminTracking.find(x=>x.project_id===p.id)||{};
+  const fullDate=fullCollectionDate(p);
+  const billDays=p.billing_date&&fullDate?Math.max(0,Math.round((new Date(fullDate)-new Date(p.billing_date))/86400000)):null;
+  const billStatus=billDays===null?"neutral":delayClass(billDays,true);
+  const projectStatus=delayClass(t.project_delay_days,false),materialStatus=delayClass(t.material_collection_delay_days,false);
+  const badge=(label,days,cls)=>days===null||days===undefined?"":`<span class="status ${cls}">${label}: ${days} days</span>`;
+  return `<div class="project"><b>${esc(p.project_name)}</b><p>Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | End: ${esc(p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p><p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p>${profile.role==="admin"?badge("Project delay",t.project_delay_days,projectStatus)+badge("Material collection",t.material_collection_delay_days,materialStatus)+badge("Billing to collection",billDays,billStatus):""}<p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p><div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div></div>`;
  }).join(""):"<p class='muted'>No projects available.</p>";
  $("history").innerHTML=payments.length?payments.map(p=>{
   const project=projects.find(x=>x.id===p.project_id);
