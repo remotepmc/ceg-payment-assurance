@@ -973,7 +973,7 @@ function reportSummaryRow(project,today){
  const full=fullCollectionDate(project),target=Number(project.billing_amount_with_tax??project.project_value??0),verified=paid(project.id);
  const payment=project.billing_date&&target>0?(full?dateDays(project.billing_date,full):verified<target?dateDays(project.billing_date,today):0):null;
  const totalPayments=pe.reduce((sum,x)=>sum+Number(x.amount||0),0);
- return [company,project.project_code||"—",project.created_at?String(project.created_at).slice(0,10):"",project.project_name||"",project.project_type||"",project.project_start_date||"",expected||"",actual||"",project.wip_delay_reason||"",project.billing_date||"",project.billing_amount_with_tax??project.project_value??"",last?.payment_date||"",totalPayments,project.service_details||"",execution??"",billing??"",payment??""];
+ return [company,project.project_code||"—",project.created_at?String(project.created_at).slice(0,10):"",project.project_name||"",project.project_type||"",project.project_start_date||"",expected||"",actual||"",project.wip_delay_reason||"",project.billing_date||"",project.billing_amount_with_tax??project.project_value??"",last?.payment_date||"",totalPayments,project.service_details||"",execution??"",billing??"",payment??"",""];
 }
 function reportCTArows(finals){
  const rows=[];
