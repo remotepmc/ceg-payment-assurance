@@ -233,7 +233,7 @@ async function load(){
   db.from("clients").select("id,client_name,email,phone,user_id,company_id,client_category"),
   db.from("projects").select("id,client_id,project_name,project_value,status,project_type,project_start_date,project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date"),
   db.from("payments").select("id,project_id,amount,payment_date,payment_mode,reference_number,status").order("payment_date",{ascending:false}),
-  isStaff()?db.from("companies").select("id,company_name").order("company_name"):{data:[],error:null},
+  db.from("companies").select("id,company_name").order("company_name"),
   profile.role==="admin"?db.from("project_admin_tracking").select("*"):{data:[],error:null}
  ]);
  for(const x of [c,p,pa,co,at])if(x.error){alert(x.error.message);return}
