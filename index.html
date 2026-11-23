@@ -168,7 +168,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <div class="form-section"><h4>Add Project · 21 Fields</h4>
 <div id="projectClientAdminOnly"><label>Client Name</label><select id="projectClient"></select></div>
 <div class="client-only-project-field"><label>1. Company Name</label><input id="projectClientNameDisplay" readonly></div>
-<label>2. CEG Date</label><input id="projectCegDate" type="date" readonly>
+<label>2. CEG Date *</label><input id="projectCegDate" type="date" required>
 <label>3. Project Name *</label><input id="projectName" placeholder="Enter project name">
 <button type="button" id="generateProjectCodeBtn" class="secondary">Generate Project ID</button><p id="projectCodePreview" class="notice hidden"></p>
 <label>4. Project Type *</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
@@ -537,7 +537,7 @@ function openClientSubmittedProject(projectId){
  $("publishClientProjectBtn").classList.remove("hidden");
  $("projectClientAdminOnly").classList.add("hidden");
  $("projectClient").value=p.client_id||"";
- $("projectCegDate").value=p.created_at?String(p.created_at).slice(0,10):"";
+ $("projectCegDate").value=p.ceg_date|| (p.created_at?String(p.created_at).slice(0,10):"");
  $("generateProjectCodeBtn").disabled=true;$("generateProjectCodeBtn").textContent="Project ID Fixed";
  $("projectName").value=p.project_name||"";
  $("projectType").value=p.project_type||"";
@@ -575,7 +575,7 @@ async function saveClientSubmittedProject(publishAfterSave=false){
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter the payment amount and payment date.");return}
  const dispatchDate=$("materialDispatch").value||null,deliveredDate=$("materialDelivered").value||null;
  const changes={
-  project_name:name,client_remarks:$("projectRemarks").value.trim()||null,service_details:$("projectServiceDetails").value.trim()||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value),
+  project_name:name,ceg_date:$("projectCegDate").value||null,client_remarks:$("projectRemarks").value.trim()||null,service_details:$("projectServiceDetails").value.trim()||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value),
   project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),
   billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,
   project_type:$("projectType").value,project_start_date:$("projectStart").value,
@@ -888,7 +888,7 @@ async function addProject(){
  if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!projectCode||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Generate the Project ID and complete Project Name, Project Type, Project Start Date and Expected Project End Date.");return;}
  const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value,hasPayment=!!(payType||payAmount||payDate);
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter amount and date.");return;}
- const payload={client_id:clientId,project_code:projectCode,project_name:name,client_remarks:$("projectRemarks").value.trim()||null,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:false,wip_delay_reason:$("projectWipReason").value||null,billing_delay_reason:$("projectBillingDelayReason").value||null,payment_delay_reason:$("projectPaymentDelayReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ const payload={client_id:clientId,project_code:projectCode,ceg_date:$("projectCegDate").value||null,project_name:name,client_remarks:$("projectRemarks").value.trim()||null,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:false,wip_delay_reason:$("projectWipReason").value||null,billing_delay_reason:$("projectBillingDelayReason").value||null,payment_delay_reason:$("projectPaymentDelayReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("*").single();if(error){alert(error.message);return;}
  resetClientProjectForm();
  if(hasPayment){const {error:pe}=await db.from("payments").insert({project_id:data.id,amount:Number(payAmount),payment_date:payDate,payment_type:payType,status:"recorded",recorded_by:user.id,notes:"Client payment entry awaiting Admin verification"});if(pe){alert("Project saved, but payment entry failed: "+pe.message);await load();return;}}
