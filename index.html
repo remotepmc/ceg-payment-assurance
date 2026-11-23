@@ -93,7 +93,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <div class="actions">
 <button id="addEntryBtn" data-toggle="clientForm">+ Add Entry</button>
 <button id="addProjectBtn" data-toggle="projectForm" disabled title="Complete Add Entry first">+ Add Project (locked)</button>
-<button id="adminTrackingBtn" data-toggle="adminTrackingForm">Update Admin Delays</button>
+<button id="adminTrackingBtn" data-toggle="adminTrackingForm">Add Revision</button>
 <button id="recordPaymentBtn" data-toggle="paymentForm">+ Submit / Record Payment</button>
 <button id="exportBtn" class="secondary">Export Report</button>
 <button id="refreshBtn" class="secondary">Refresh</button>
@@ -135,13 +135,13 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <button data-close="projectForm" class="secondary">Cancel</button>
 </div>
 <div id="adminTrackingForm" class="panel hidden">
-<h3>Update Delay Reasons (Admin)</h3>
+<h3>Add Revision (Admin)</h3>
 <label>Select Project</label><select id="trackingProject"></select>
 <label>Execution / WIP Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Payment Delay Reason</label><select id="editPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>CEG Service Designed (Admin Only)</label><select id="editCegDesigned"><option value="">Select CEG service</option><option value="Action Plan — ₹299*">Action Plan — Chhota, powerful first step — ₹299*</option><option value="Aapka Naksha 2D — ₹999*">Aapka Naksha 2D — Plot-based 2D layout guidance — ₹999*</option><option value="Site Anusasan Online — ₹1,999*">Site Anusasan Online — Site discipline, work sequence and quality — ₹1,999*</option><option value="Sales ki Bhasha Online — ₹1,999*">Sales ki Bhasha Online — Client communication and sales follow-up — ₹1,999*</option><option value="Be Prepared Online — ₹1,999*">Be Prepared Online — Pre-start checklist — ₹1,999*</option><option value="KYG — Know Your Ghar — ₹1,999*">KYG — Know Your Ghar — Home planning and quality checks — ₹1,999*</option><option value="KYW — Know Your Work — ₹2,999*">KYW — Know Your Work — Work scope and responsibility clarity — ₹2,999*</option><option value="ANGAD — Aapka Doot — ₹4,999*">ANGAD — Aapka Doot — Connect the right people and manage follow-ups — ₹4,999*</option><option value="Third Eye Remote PMC — ₹12,000*">Third Eye Remote PMC — Remote monitoring, reviews and quality checks — ₹12,000*</option></select>
-<button id="saveAdminTracking">Save Admin Tracking</button>
+<button id="saveAdminTracking">Save Revision</button>
 <button data-close="adminTrackingForm" class="secondary">Cancel</button>
 </div>
 <div id="paymentForm" class="panel hidden">
