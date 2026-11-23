@@ -71,7 +71,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 
 <section id="staff" class="hidden">
 <div class="actions">
-<button data-toggle="companyForm">+ Add Company</button>
+<button id="addCompanyBtn" data-toggle="companyForm">+ Add Company</button>
 <button data-toggle="clientForm">+ Add Client</button>
 <button data-toggle="projectForm">+ Add Project</button>
 <button id="adminTrackingBtn" data-toggle="adminTrackingForm">Update Admin Delays</button>
@@ -280,6 +280,7 @@ function render(){
   $("clientCompany").innerHTML='<option value="">Select company</option>'+companies.map(c=>`<option value="${c.id}">${esc(c.company_name)}</option>`).join("");
   $("adminProjectFields").classList.toggle("hidden",profile.role!=="admin");
   $("companyForm").classList.toggle("hidden",profile.role!=="admin");
+  $("addCompanyBtn").classList.toggle("hidden",profile.role!=="admin");
   $("adminTrackingBtn").classList.toggle("hidden",profile.role!=="admin");
   $("trackingProject").innerHTML=projects.map(p=>`<option value="${p.id}">${esc(p.project_name)}</option>`).join("");
  }
