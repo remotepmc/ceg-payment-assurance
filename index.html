@@ -71,7 +71,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <button id="loginBtn">Login</button>
 <button id="signupBtn" class="secondary">Create Account</button>
 <p id="message" class="muted"></p>
-<p class="notice">New accounts receive client access. Staff access must be assigned by the administrator.</p>
+<p class="notice">New accounts receive Client access. Admin access is assigned separately. To link a Client login, use the same email address saved by Admin in the client entry.</p>
 </section>
 
 <section id="app" class="hidden">
@@ -102,7 +102,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <label>Category</label><select id="clientCategory">
 <option value="">Select category</option><option>Individual</option><option>Contractor Civil</option><option>Contractor Interior</option><option>Architect</option><option>Interior Designer</option><option>Builder</option><option>SCM-WS</option><option>SCM-Ret</option><option>Manufacturer</option>
 </select>
-<label>Email</label><input id="clientEmail" type="email">
+<label>Client Login Email</label><input id="clientEmail" type="email"><p class="muted">The client must sign up using this same email address. Their login will then link to this client record.</p>
 <label>Phone</label><input id="clientPhone">
 <button id="saveClient">Save Entry</button>
 <button data-close="clientForm" class="secondary">Cancel</button>
