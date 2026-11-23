@@ -1138,6 +1138,19 @@ $("publishClientProjectBtn").onclick=()=>{if(adminEditingClientProjectId)saveCli
  document.addEventListener("change",e=>{const start=e.target.closest("[data-start-for]");if(start)refreshExpectedDate(start.id,start.dataset.startFor,"");});
  $("revProjectStart").addEventListener("input",()=>refreshExpectedDate("revProjectStart","revExpectedProjectEnd",""));
  $("revProjectStart").addEventListener("change",()=>refreshExpectedDate("revProjectStart","revExpectedProjectEnd",""));
+function exportCSV(){
+ const rows=[["Project","Client","Value","Verified","Outstanding"]];
+ projects.forEach(p=>{
+  const c=clients.find(x=>x.id===p.client_id),v=Number(p.project_value||0),got=paid(p.id);
+  rows.push([p.project_name,c?.client_name||"",v,got,v-got]);
+ });
+ const csv=rows.map(r=>r.map(x=>'"'+String(x??"").replace(/"/g,'""')+'"').join(",")).join("\n");
+ const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+ const fileURL=window.URL.createObjectURL(blob);
+ const a=document.createElement("a");a.href=fileURL;a.download="CEG-payment-report.csv";a.click();
+ window.URL.revokeObjectURL(fileURL);
+}
+
 $("savePayment").onclick=addPayment;
 $("refreshBtn").onclick=load;
 $("exportBtn").onclick=exportCSV;
