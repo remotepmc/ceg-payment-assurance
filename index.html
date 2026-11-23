@@ -137,7 +137,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Billing Amount with Tax (INR, whole rupees)</label><input id="billingAmount" type="number" min="0" step="1">
 <label>Material Dispatch Date</label><input id="materialDispatch" type="date">
 <label>Material Delivered Date</label><input id="materialDelivered" type="date">
-<label>Material Collection Date</label><input id="materialCollection" type="date">
+
 <button id="saveProject">Save Project</button>
 <button data-close="projectForm" class="secondary">Cancel</button>
 </div>
@@ -156,7 +156,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Billing Amount with Tax (INR)</label><input id="revBillingAmount" type="number" min="0" step="1">
 <label>Material Dispatch Date</label><input id="revMaterialDispatch" type="date">
 <label>Material Delivered Date</label><input id="revMaterialDelivered" type="date">
-<label>Material Collection Date</label><input id="revMaterialCollection" type="date">
+
 <label>Execution / WIP Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Payment Delay Reason</label><select id="editPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
@@ -377,7 +377,7 @@ function renderAdminClientSidebar(){
 }
 function renderRecords(){
  const admin=profile.role==="admin";
- const headers=["Project ID","Workflow Stage","Revision No.","Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Expected End Date","Actual End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Material Collection Date","Execution Delay Days","Execution Delay Reason","Billing Delay Days","Billing Delay Reason","Payment Delay Days","Payment Delay Reason","Total Verified","Outstanding"];
+ const headers=["Project ID","Workflow Stage","Revision No.","Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Expected End Date","Actual End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Execution Delay Days","Execution Delay Reason","Billing Delay Days","Billing Delay Reason","Payment Delay Days","Payment Delay Reason","Total Verified","Outstanding"];
  if(admin)headers.push("CEG Service Designed");
  $("recordsHead").innerHTML="<tr>"+headers.map(h=>"<th>"+h+"</th>").join("")+"</tr>";
  const companyById=id=>companies.find(x=>x.id===id)?.company_name||"—";
@@ -496,7 +496,7 @@ function render(){
   <label>Billing Amount with Tax (₹)</label><input id="ce_billamount_${p.id}" type="number" min="0" step="1" value="${esc(p.billing_amount_with_tax??p.project_value??"")}">
   <label>Material Dispatch Date</label><input id="ce_dispatch_${p.id}" type="date" value="${esc(p.material_dispatch_date||"")}">
   <label>Material Delivered Date</label><input id="ce_delivered_${p.id}" type="date" value="${esc(p.material_delivered_date||"")}">
-  <label>Material Collection Date</label><input id="ce_collection_${p.id}" type="date" value="${esc(p.material_collection_date||"")}">
+
   <button data-client-save="${p.id}">Save Changes & Send for Admin Review</button></details>`:"";
   const approvalLink=`https://wa.me/917894531187?text=${encodeURIComponent("Please review and approve my project "+(p.project_code||"")+" — "+(p.project_name||"")+". Current revision: "+(p.revision_no||1)+". I have checked the details in the Client Portal.")}`;
   const clientApproval=p.workflow_stage!=="final"?`<p><a class="cc-whatsapp" href="${approvalLink}" target="_blank" rel="noopener">WhatsApp Admin — Request Review / Approval</a></p>`:"";
@@ -554,7 +554,7 @@ async function saveClientProject(projectId){
   project_hold:val("ce_hold")==="true",billing_done:val("ce_billed")==="true",
   billing_date:val("ce_billdate")||null,billing_amount_with_tax:amount,
   project_value:amount??0,material_dispatch_date:val("ce_dispatch")||null,
-  material_delivered_date:val("ce_delivered")||null,material_collection_date:val("ce_collection")||null
+  material_delivered_date:val("ce_delivered")||null,
  };
  if(!changes.project_name||!changes.project_type||!changes.project_start_date||changes.expected_duration_days<=0||!changes.expected_project_end_date){
   alert("Project Name, Type, Start Date, Expected Duration and Expected End Date are required.");return;
@@ -604,7 +604,7 @@ async function addProject(){
  
  const clientId=$("projectClient").value;
  if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project End Date are mandatory.");return}
- const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("*").single();
  if(error){alert(error.message);return}
  const {error:historyError}=await db.from("project_revisions").insert({project_id:data.id,revision_no:1,revision_type:"submission",revision_data:data,revision_note:"Initial project submitted for Admin review",created_by:user.id});
@@ -633,7 +633,6 @@ async function saveAdminTracking(){
   project_value:$("revBillingAmount").value===""?0:Number($("revBillingAmount").value),
   material_dispatch_date:$("revMaterialDispatch").value||null,
   material_delivered_date:$("revMaterialDelivered").value||null,
-  material_collection_date:$("revMaterialCollection").value||null
  };
  if(!projectChanges.project_name||!projectChanges.project_type||!projectChanges.project_start_date||projectChanges.expected_duration_days<=0||!projectChanges.expected_project_end_date){alert("Project Name, Project Type, Start Date and Expected Project End Date are mandatory.");return}
  const {error:projectEditError}=await db.from("projects").update(projectChanges).eq("id",projectId);
@@ -740,7 +739,6 @@ $("trackingProject").onchange=()=>{
  $("revBillingAmount").value=p.billing_amount_with_tax??p.project_value??"";
  $("revMaterialDispatch").value=p.material_dispatch_date||"";
  $("revMaterialDelivered").value=p.material_delivered_date||"";
- $("revMaterialCollection").value=p.material_collection_date||"";
  $("editProjectDelayReason").value=t.project_delay_reason||"";
  $("editBillingDelayReason").value=t.billing_delay_reason||"";
  $("editPaymentDelayReason").value=t.payment_delay_reason||"";
