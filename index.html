@@ -143,7 +143,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <div id="projectForm" class="panel hidden"><h3>Add Project</h3>
 <div class="form-section"><h4>Add Project · 21 Fields</h4>
 <div id="projectClientAdminOnly"><label>Client Name</label><select id="projectClient"></select></div>
-<div class="client-only-project-field"><label>1. Client Name</label><input id="projectClientNameDisplay" readonly></div>
+<div class="client-only-project-field"><label>1. Company Name</label><input id="projectClientNameDisplay" readonly></div>
 <label>2. CEG Date</label><input id="projectCegDate" type="date" readonly>
 <label>3. Project Name *</label><input id="projectName" placeholder="Enter project name">
 <button type="button" id="generateProjectCodeBtn" class="secondary">Generate Project ID</button><p id="projectCodePreview" class="notice hidden"></p>
@@ -783,7 +783,7 @@ function render(){
  $("saveProject").textContent="Save Project";
  $("projectClient").innerHTML=clients.map(c=>'<option value="'+c.id+'">'+esc(c.client_name)+'</option>').join("");
  $("projectClient").value=clients[0]?.id||"";
- $("projectClientNameDisplay").value=clients[0]?.client_name||"";
+ $("projectClientNameDisplay").value=companies.find(x=>x.id===clients[0]?.company_id)?.company_name||"";
  $("projectCegDate").value=new Date().toISOString().slice(0,10);
  $("paymentProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc((p.project_code||"")+ " — "+p.project_name)+'</option>').join("");
  const previousTrackingProject=$("trackingProject").value;
@@ -1007,7 +1007,7 @@ document.addEventListener("click",e=>{
  const submitted=e.target.closest("[data-open-client-submission]");if(submitted)openClientSubmittedProject(submitted.dataset.openClientSubmission);
  const del=e.target.closest("[data-delete-client-project]");if(del)deleteClientProject(del.dataset.deleteClientProject);
  const gen=e.target.closest("#generateProjectCodeBtn");if(gen)generateProjectId();
- const t=e.target.closest("[data-toggle]");if(t){$(t.dataset.toggle).classList.toggle("hidden");if(t.dataset.toggle==="projectForm"&&!adminEditingClientProjectId){$("projectCegDate").value=new Date().toISOString().slice(0,10);$("projectClientNameDisplay").value=clients[0]?.client_name||"";}}
+ const t=e.target.closest("[data-toggle]");if(t){$(t.dataset.toggle).classList.toggle("hidden");if(t.dataset.toggle==="projectForm"&&!adminEditingClientProjectId){$("projectCegDate").value=new Date().toISOString().slice(0,10);$("projectClientNameDisplay").value=companies.find(x=>x.id===clients[0]?.company_id)?.company_name||"";}}
  const c=e.target.closest("[data-close]");if(c){if(c.dataset.close==="projectForm"&&adminEditingClientProjectId){closeAdminProjectEditor();}else $(c.dataset.close).classList.add("hidden");if(c.dataset.close==="adminTrackingForm"){adminClientEditProjectId=null;$("trackingProjectLabel").classList.remove("hidden");$("trackingProject").classList.remove("hidden");$("adminTrackingForm").querySelector("h3").textContent="Add Revision (Admin)";$("saveAdminTracking").textContent="Save Revision";}}
  const v=e.target.closest("[data-verify]");if(v)verify(v.dataset.verify,v.dataset.status);
  const clientEdit=e.target.closest("[data-edit-client-project]");if(clientEdit){const id=clientEdit.dataset.editClientProject;const p=projects.find(x=>x.id===id);if(!p){alert("Client project not found. Refresh and try again.");return}adminClientEditProjectId=id;if(![...$("trackingProject").options].some(o=>o.value===id))$("trackingProject").add(new Option((p.project_code||"")+" — "+p.project_name,id));$("trackingProject").value=id;$("trackingProject").dispatchEvent(new Event("change"));$("trackingProjectLabel").classList.add("hidden");$("trackingProject").classList.add("hidden");$("adminTrackingForm").querySelector("h3").textContent="Edit Client Submitted Project";$("saveAdminTracking").textContent="Save Project Changes";$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
