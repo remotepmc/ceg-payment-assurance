@@ -766,6 +766,7 @@ $("trackingProject").onchange=()=>{
  $("revBillingAmount").value=p.billing_amount_with_tax??p.project_value??"";
  $("revMaterialDispatch").value=p.material_dispatch_date||"";
  $("revMaterialDelivered").value=p.material_delivered_date||"";
+ if($("revMaterialDelivered").value) syncMaterialDateChain("revMaterialDelivered");
  $("editProjectDelayReason").value=t.project_delay_reason||"";
  $("editBillingDelayReason").value=t.billing_delay_reason||"";
  $("editPaymentDelayReason").value=t.payment_delay_reason||"";
