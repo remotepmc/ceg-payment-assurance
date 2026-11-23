@@ -39,7 +39,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 .cta-card.attention{border-top:4px solid #d69a18}.cta-card.critical{border-top:4px solid #d74646}
 .cta-card h4{font-size:26px;line-height:1.35;margin:0 0 7px;color:#263b55}.cta-card .cta-level{font-size:20px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;color:#78889a}
 .cta-count{font-size:56px;line-height:1.1;font-weight:800;color:#183f70;margin:5px 0}.cta-rule{font-size:22px;color:#78889a}.cta-list{border-top:1px solid #edf1f6;margin-top:9px;padding-top:7px;font-size:22px;color:#526276;max-height:130px;overflow:auto}.cta-list div{padding:4px 0;border-bottom:1px solid #f0f3f7}.cta-empty{color:#8290a0;font-style:italic}
-.summary-table-wrap{overflow-x:auto;margin-top:14px}.summary-table{width:100%;border-collapse:collapse;background:#fff;font-size:24px;min-width:760px}.summary-table th,.summary-table td{padding:10px 8px;border-bottom:1px solid #e8edf4;text-align:left;vertical-align:top}.summary-table th{background:#edf3fa;color:#294766;white-space:nowrap}.summary-table tfoot td{font-weight:800;background:#f4f7fb}.summary-sub{display:block;color:#7a899b;font-size:20px;margin-top:3px}.summary-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.summary-kpi{background:#fff;border:1px solid #e1e8f0;border-radius:10px;padding:10px}.summary-kpi small{display:block;color:#718096;font-size:20px}.summary-kpi b{display:block;color:#173d6b;font-size:34px;margin-top:4px}@media(max-width:420px){.summary-kpis{grid-template-columns:1fr}}
+.summary-table-wrap{overflow-x:auto;margin-top:14px}.summary-table{width:100%;border-collapse:collapse;background:#fff;font-size:24px;min-width:760px}.summary-table th,.summary-table td{padding:10px 8px;border-bottom:1px solid #e8edf4;text-align:left;vertical-align:top}.summary-table th{background:#edf3fa;color:#294766;white-space:nowrap}.summary-table tfoot td{font-weight:800;background:#f4f7fb}.summary-sub{display:block;color:#7a899b;font-size:20px;margin-top:3px}.summary-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.summary-kpi{background:#fff;border:1px solid #e1e8f0;border-radius:10px;padding:10px}.summary-kpi small{display:block;color:#718096;font-size:20px}.summary-kpi b{display:block;color:#173d6b;font-size:34px;margin-top:4px}.summary-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.summary-overview-item{background:#f7f9fc;border:1px solid #e1e8f0;border-radius:10px;padding:13px;min-width:0}.summary-overview-item small{display:block;color:#718096;font-size:22px}.summary-overview-item strong{display:block;color:#173d6b;font-size:34px;margin-top:5px;overflow-wrap:anywhere}.summary-overview-item .service-list{font-size:24px;line-height:1.45;color:#294766;margin-top:6px}@media(max-width:420px){.summary-overview{grid-template-columns:1fr}}@media(max-width:420px){.summary-kpis{grid-template-columns:1fr}}
 @media(max-width:420px){.cta-grid{grid-template-columns:1fr}}
 .status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:22px;font-weight:bold;margin:3px}
 .green{background:#e4f5ec;color:#187449}.yellow{background:#fff4d6;color:#946200}.red{background:#fff0ef;color:#bd3939}.neutral{background:#edf1f6;color:#526276}
@@ -92,12 +92,10 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <div class="row"><h3 id="welcome">Dashboard</h3><button id="logoutBtn" class="secondary">Logout</button></div>
 <p id="roleText" class="muted"></p>
 <div class="dashboard-intro"><h3 id="dashboardTitle">Your workspace</h3><p id="dashboardDescription">Manage your projects and updates.</p><span id="rolePill" class="role-pill">Secure workspace</span></div>
-<div class="grid">
-<div class="card"><small>Total Project Value</small><div class="amount" id="total">₹0</div></div>
-<div class="card"><small>Verified Collection</small><div class="amount" id="collected">₹0</div></div>
-<div class="card"><small>Outstanding</small><div class="amount" id="outstanding">₹0</div></div>
-<div class="card"><small>Projects</small><div class="amount" id="count">0</div></div>
-</div>
+<section id="summaryPanel" class="panel">
+<h3 style="margin-top:0">Summary</h3>
+<div id="summaryContent" class="summary-overview"></div>
+</section>
 <div id="delayDashboard" class="chartbox hidden"></div>
 <div id="clientActionDashboard" class="chartbox hidden"></div>
 
@@ -404,12 +402,21 @@ function setupRecordFilters(){
 }
 
 function render(){
- const total=projects.reduce((s,p)=>s+Number(p.project_value||0),0);
- const collected=projects.reduce((s,p)=>s+paid(p.id),0);
- $("total").textContent=money(total);
- $("collected").textContent=money(collected);
- $("outstanding").textContent=money(total-collected);
- $("count").textContent=projects.length;
+ const approvedProjects=projects.filter(p=>p.workflow_stage==="final");
+ const totalValue=approvedProjects.reduce((sum,p)=>sum+Number(p.billing_amount_with_tax??p.project_value??0),0);
+ const verifiedCollection=approvedProjects.reduce((sum,p)=>sum+paid(p.id),0);
+ const outstandingValue=Math.max(0,totalValue-verifiedCollection);
+ const maxAging=approvedProjects.reduce((max,p)=>{
+  const d=delayInfo(p);
+  return Math.max(max,Number(d.execution.days||0),Number(d.billing.days||0),Number(d.payment.days||0));
+ },0);
+ const mappedServices=[...new Set(approvedProjects.map(p=>(adminTracking.find(t=>t.project_id===p.id)||{}).ceg_service_designed).filter(v=>v&&v.trim()))];
+ $("summaryContent").innerHTML=
+  `<div class="summary-overview-item"><small>Project</small><strong>${approvedProjects.length} ${approvedProjects.length===1?"Project":"Projects"}</strong></div>
+  <div class="summary-overview-item"><small>Total Project Value</small><strong>${money(totalValue)}</strong></div>
+  <div class="summary-overview-item"><small>Outstanding Value</small><strong>${money(outstandingValue)}</strong></div>
+  <div class="summary-overview-item"><small>Aging · Highest across projects</small><strong>${maxAging} days</strong></div>
+  <div class="summary-overview-item" style="grid-column:1/-1"><small>Services Required · Admin-approved</small><div class="service-list">${mappedServices.length?mappedServices.map(esc).join(" · "):"No service mapped yet by Admin"}</div></div>`;
  const ctaDefinitions=[
   {key:"execution",level:"attention",title:"Project Execution Delay",label:"ATTENTION",rule:"1–15 days"},
   {key:"execution",level:"critical",title:"Project Execution Delay",label:"CRITICAL",rule:"More than 15 days"},
