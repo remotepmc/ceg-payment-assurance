@@ -1,0 +1,19 @@
+{
+  "name": "CEGPA",
+  "short_name": "CEGPA",
+  "description": "Construction project visibility and management by Confident Closer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f6fb",
+  "theme_color": "#123d75",
+  "icons": [
+    {
+      "src": "./icons/ceg-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
