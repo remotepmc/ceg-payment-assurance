@@ -128,8 +128,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Project Name</label><input id="projectName">
 <label>Project Type</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
 <label>Project Start Date *</label><input id="projectStart" type="date" required>
-<label>Expected Project Duration *</label><select id="projectDuration" required><option value="">Select expected duration</option><option value="2">+2 days — Material supply / very small work</option><option value="15">+15 days — Small execution work</option><option value="45">+45 days</option><option value="90">+90 days</option><option value="200">+200 days</option><option value="400">+400 days</option></select>
-<label>Expected Project End Date *</label><input id="expectedProjectEnd" type="date" readonly required>
+<label>Expected Project End Date *</label><select id="expectedProjectEnd" required><option value="">Select start date first</option></select>
 <label>Actual Project End Date</label><input id="projectEnd" type="date">
 <label>Project Hold</label><select id="projectHold"><option value="false">No</option><option value="true">Yes</option></select>
 
@@ -148,8 +147,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Project Name</label><input id="revProjectName">
 <label>Project Type</label><select id="revProjectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
 <label>Project Start Date *</label><input id="revProjectStart" type="date" required>
-<label>Expected Project Duration *</label><select id="revProjectDuration" required><option value="">Select expected duration</option><option value="2">+2 days — Material supply / very small work</option><option value="15">+15 days — Small execution work</option><option value="45">+45 days</option><option value="90">+90 days</option><option value="200">+200 days</option><option value="400">+400 days</option></select>
-<label>Expected Project End Date *</label><input id="revExpectedProjectEnd" type="date" readonly required>
+<label>Expected Project End Date *</label><select id="revExpectedProjectEnd" required><option value="">Select start date first</option></select>
 <label>Actual Project End Date</label><input id="revProjectEnd" type="date">
 <label>Project Hold</label><select id="revProjectHold"><option value="false">No</option><option value="true">Yes</option></select>
 <label>Project Execution / WIP Delay Reason</label><select id="revWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
@@ -343,7 +341,12 @@ function dateDays(from,to){
  const a=Date.parse(String(from).slice(0,10)+"T00:00:00Z"),b=Date.parse(String(to).slice(0,10)+"T00:00:00Z");
  return Number.isFinite(a)&&Number.isFinite(b)?Math.max(0,Math.floor((b-a)/86400000)):null;
 }
-function calculateExpectedEnd(startId,durationId,endId){const start=$(startId).value,days=Number($(durationId).value);if(!start||!days){$(endId).value="";return}const d=new Date(start+"T12:00:00");d.setDate(d.getDate()+days);$(endId).value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+const EXPECTED_OFFSETS=[2,15,45,90,200,400];
+function addDaysISO(start,days){if(!start)return "";const d=new Date(start+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
+function durationBetween(start,end){if(!start||!end)return 0;return Math.round((Date.parse(end+"T00:00:00Z")-Date.parse(start+"T00:00:00Z"))/86400000)}
+function expectedDateOptions(start,selected=""){if(!start)return '<option value="">Select start date first</option>';return '<option value="">Select expected end date</option>'+EXPECTED_OFFSETS.map(days=>{const date=addDaysISO(start,days);return '<option value="'+date+'" '+(selected===date?'selected':'')+'>'+date+' (+'+days+' days)</option>'}).join("")}
+function refreshExpectedDate(startId,endId,selected=""){const end=$(endId);if(!end)return;const keep=selected||end.value;end.innerHTML=expectedDateOptions($(startId).value,keep);if(keep&&![...end.options].some(o=>o.value===keep))end.value="";}
+function calculateExpectedEnd(startId,endId){refreshExpectedDate(startId,endId);}
 function delayInfo(project){
  const today=new Date().toISOString().slice(0,10);
  const actualEnd=project.actual_project_end_date||project.project_end_date||null;
@@ -484,9 +487,8 @@ function render(){
   const clientEdit=p.workflow_stage!=="final"?`<details class="panel"><summary>Edit Project & Resubmit to Admin</summary><p class="muted">You can update your project details while it is awaiting Admin review. Your changes are saved as a new revision.</p>
   <label>Project Name</label><input id="ce_name_${p.id}" value="${esc(p.project_name||"")}">
   <label>Project Type</label><select id="ce_type_${p.id}"><option value="">Select project type</option>${["Civil","Interior Furniture","Materials Supply","Design Drawing","Skill Training"].map(x=>`<option ${p.project_type===x?"selected":""}>${x}</option>`).join("")}</select>
-  <label>Project Start Date</label><input id="ce_start_${p.id}" type="date" value="${esc(p.project_start_date||"")}">
-  <label>Expected Duration</label><select id="ce_duration_${p.id}"><option value="">Select duration</option>${[2,15,45,90,200,400].map(x=>`<option value="${x}" ${Number(p.expected_duration_days)===x?"selected":""}>+${x} days</option>`).join("")}</select>
-  <label>Expected Project End Date</label><input id="ce_expected_${p.id}" type="date" value="${esc(p.expected_project_end_date||"")}">
+  <label>Project Start Date</label><input id="ce_start_${p.id}" type="date" value="${esc(p.project_start_date||"")}" data-start-for="ce_expected_${p.id}">
+  <label>Expected Project End Date</label><select id="ce_expected_${p.id}" data-expected-end>${expectedDateOptions(p.project_start_date,p.expected_project_end_date)}</select>
   <label>Actual Project End Date</label><input id="ce_actual_${p.id}" type="date" value="${esc(p.actual_project_end_date||p.project_end_date||"")}">
   <label>Project Hold</label><select id="ce_hold_${p.id}"><option value="false" ${!p.project_hold?"selected":""}>No</option><option value="true" ${p.project_hold?"selected":""}>Yes</option></select>
   <label>Billing Done</label><select id="ce_billed_${p.id}"><option value="false" ${!p.billing_done?"selected":""}>No</option><option value="true" ${p.billing_done?"selected":""}>Yes</option></select>
@@ -546,7 +548,7 @@ async function saveClientProject(projectId){
  const changes={
   project_name:val("ce_name").trim(),project_type:val("ce_type")||null,
   project_start_date:val("ce_start")||null,
-  expected_duration_days:val("ce_duration")===""?null:Number(val("ce_duration")),
+  expected_duration_days:durationBetween(val("ce_start"),val("ce_expected")),
   expected_project_end_date:val("ce_expected")||null,
   actual_project_end_date:val("ce_actual")||null,project_end_date:val("ce_actual")||null,
   project_hold:val("ce_hold")==="true",billing_done:val("ce_billed")==="true",
@@ -554,7 +556,7 @@ async function saveClientProject(projectId){
   project_value:amount??0,material_dispatch_date:val("ce_dispatch")||null,
   material_delivered_date:val("ce_delivered")||null,material_collection_date:val("ce_collection")||null
  };
- if(!changes.project_name||!changes.project_type||!changes.project_start_date||!changes.expected_duration_days||!changes.expected_project_end_date){
+ if(!changes.project_name||!changes.project_type||!changes.project_start_date||changes.expected_duration_days<=0||!changes.expected_project_end_date){
   alert("Project Name, Type, Start Date, Expected Duration and Expected End Date are required.");return;
  }
  const {error:updateError}=await db.from("projects").update(changes).eq("id",projectId);
@@ -601,8 +603,8 @@ async function addProject(){
  const name=$("projectName").value.trim(),billing= $("billingAmount").value;
  
  const clientId=$("projectClient").value;
- if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value||!$("projectStart").value||!$("projectDuration").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project Duration are mandatory.");return}
- const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:Number($("projectDuration").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project End Date are mandatory.");return}
+ const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("*").single();
  if(error){alert(error.message);return}
  const {error:historyError}=await db.from("project_revisions").insert({project_id:data.id,revision_no:1,revision_type:"submission",revision_data:data,revision_note:"Initial project submitted for Admin review",created_by:user.id});
@@ -619,7 +621,7 @@ async function saveAdminTracking(){
   project_name:$("revProjectName").value.trim(),
   project_type:$("revProjectType").value||null,
   project_start_date:$("revProjectStart").value||null,
-   expected_duration_days:Number($("revProjectDuration").value),
+   expected_duration_days:durationBetween($("revProjectStart").value,$("revExpectedProjectEnd").value),
    expected_project_end_date:$("revExpectedProjectEnd").value||null,
    actual_project_end_date:$("revProjectEnd").value||null,
   project_end_date:$("revProjectEnd").value||null,
@@ -633,7 +635,7 @@ async function saveAdminTracking(){
   material_delivered_date:$("revMaterialDelivered").value||null,
   material_collection_date:$("revMaterialCollection").value||null
  };
- if(!projectChanges.project_name||!projectChanges.project_type||!projectChanges.project_start_date||!projectChanges.expected_duration_days||!projectChanges.expected_project_end_date){alert("Project Name, Project Type, Start Date and Expected Duration are mandatory.");return}
+ if(!projectChanges.project_name||!projectChanges.project_type||!projectChanges.project_start_date||projectChanges.expected_duration_days<=0||!projectChanges.expected_project_end_date){alert("Project Name, Project Type, Start Date and Expected Project End Date are mandatory.");return}
  const {error:projectEditError}=await db.from("projects").update(projectChanges).eq("id",projectId);
  if(projectEditError){alert("Project details could not be revised: "+projectEditError.message);return}
  const trackingPayload={
@@ -729,8 +731,7 @@ $("trackingProject").onchange=()=>{
  $("revProjectName").value=p.project_name||"";
  $("revProjectType").value=p.project_type||"";
  $("revProjectStart").value=p.project_start_date||"";
-  $("revProjectDuration").value=String(p.expected_duration_days||"");
-  $("revExpectedProjectEnd").value=p.expected_project_end_date||"";
+  refreshExpectedDate("revProjectStart","revExpectedProjectEnd",p.expected_project_end_date||"");
  $("revProjectEnd").value=p.actual_project_end_date||p.project_end_date||"";
  $("revProjectHold").value=String(!!p.project_hold);
  $("revWipReason").value=p.wip_delay_reason||"";
@@ -747,10 +748,9 @@ $("trackingProject").onchange=()=>{
 };
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
- $("projectStart").addEventListener("change",()=>calculateExpectedEnd("projectStart","projectDuration","expectedProjectEnd"));
- $("projectDuration").addEventListener("change",()=>calculateExpectedEnd("projectStart","projectDuration","expectedProjectEnd"));
- $("revProjectStart").addEventListener("change",()=>calculateExpectedEnd("revProjectStart","revProjectDuration","revExpectedProjectEnd"));
- $("revProjectDuration").addEventListener("change",()=>calculateExpectedEnd("revProjectStart","revProjectDuration","revExpectedProjectEnd"));
+ $("projectStart").addEventListener("change",()=>calculateExpectedEnd("projectStart","expectedProjectEnd"));
+ $("revProjectStart").addEventListener("change",()=>calculateExpectedEnd("revProjectStart","revExpectedProjectEnd"));
+ document.addEventListener("change",e=>{const start=e.target.closest("[data-start-for]");if(start){const endId=start.dataset.startFor;refreshExpectedDate(start.id,endId);}});
 $("savePayment").onclick=addPayment;
 $("refreshBtn").onclick=load;
 $("exportBtn").onclick=exportCSV;
