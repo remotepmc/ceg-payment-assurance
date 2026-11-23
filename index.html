@@ -74,6 +74,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <button data-toggle="companyForm">+ Add Company</button>
 <button data-toggle="clientForm">+ Add Client</button>
 <button data-toggle="projectForm">+ Add Project</button>
+<button id="adminTrackingBtn" data-toggle="adminTrackingForm">Update Admin Delays</button>
 <button data-toggle="paymentForm">+ Record Payment</button>
 <button id="exportBtn" class="secondary">Export Report</button>
 <button id="refreshBtn" class="secondary">Refresh</button>
@@ -126,6 +127,21 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <button id="saveProject">Save Project</button>
 <button data-close="projectForm" class="secondary">Cancel</button>
 </div>
+<div id="adminTrackingForm" class="panel hidden">
+<h3>Update Admin-only Tracking</h3>
+<label>Select Project</label><select id="trackingProject"></select>
+<label>Project Delay Days</label><input id="editProjectDelayDays" type="number" min="0" step="1">
+<label>Project Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>Billing Delay Days</label><input id="editBillingDelayDays" type="number" min="0" step="1">
+<label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>Payment Delay Days</label><input id="editPaymentDelayDays" type="number" min="0" step="1">
+<label>Payment Delay Reason</label><select id="editPaymentDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>Material Collection Delay Days</label><input id="editMaterialDelayDays" type="number" min="0" step="1">
+<label>Material Collection Delay Reason</label><select id="editMaterialDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>CEG Service Designed</label><select id="editCegDesigned"><option value="">Select</option><option value="true">Yes</option><option value="false">No</option></select>
+<button id="saveAdminTracking">Save Admin Tracking</button>
+<button data-close="adminTrackingForm" class="secondary">Cancel</button>
+</div>
 <div id="paymentForm" class="panel hidden">
 <h3>Record Payment</h3>
 <label>Select Project</label><select id="paymentProject"></select>
@@ -159,7 +175,7 @@ const staffRoles=["admin","staff"];
 const isStaff=()=>staffRoles.includes(profile?.role);
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function hideForms(){["companyForm","clientForm","projectForm","paymentForm"].forEach(id=>$(id).classList.add("hidden"))}
+function hideForms(){["companyForm","clientForm","projectForm","adminTrackingForm","paymentForm"].forEach(id=>$(id).classList.add("hidden"))}
 
 async function login(){
  $("message").textContent="Signing in...";
@@ -194,7 +210,7 @@ async function load(){
   db.from("clients").select("id,client_name,email,phone,user_id,company_id,client_category"),
   db.from("projects").select("id,client_id,project_name,project_value,status,project_type,project_start_date,project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date"),
   db.from("payments").select("id,project_id,amount,payment_date,payment_mode,reference_number,status").order("payment_date",{ascending:false}),
-  profile.role==="admin"?db.from("companies").select("id,company_name").order("company_name"):{data:[],error:null},
+  isStaff()?db.from("companies").select("id,company_name").order("company_name"):{data:[],error:null},
   profile.role==="admin"?db.from("project_admin_tracking").select("*"):{data:[],error:null}
  ]);
  for(const x of [c,p,pa,co,at])if(x.error){alert(x.error.message);return}
@@ -263,6 +279,9 @@ function render(){
   $("paymentProject").innerHTML=projects.map(p=>`<option value="${p.id}">${esc(p.project_name)}</option>`).join("");
   $("clientCompany").innerHTML='<option value="">Select company</option>'+companies.map(c=>`<option value="${c.id}">${esc(c.company_name)}</option>`).join("");
   $("adminProjectFields").classList.toggle("hidden",profile.role!=="admin");
+  $("companyForm").classList.toggle("hidden",profile.role!=="admin");
+  $("adminTrackingBtn").classList.toggle("hidden",profile.role!=="admin");
+  $("trackingProject").innerHTML=projects.map(p=>`<option value="${p.id}">${esc(p.project_name)}</option>`).join("");
  }
 }
 async function addCompany(){
@@ -290,6 +309,20 @@ async function addProject(){
   if(adminError){alert("Project saved, but admin tracking failed: "+adminError.message);return}
  }
  alert("Project saved");hideForms();await load();
+}
+async function saveAdminTracking(){
+ const projectId=$("trackingProject").value;if(!projectId){alert("Select a project");return}
+ const val=id=>$(id).value===""?null:Number($(id).value);
+ const {error}=await db.from("project_admin_tracking").upsert({
+  project_id:projectId,
+  project_delay_days:val("editProjectDelayDays"),project_delay_reason:$("editProjectDelayReason").value||null,
+  billing_delay_days:val("editBillingDelayDays"),billing_delay_reason:$("editBillingDelayReason").value||null,
+  payment_delay_days:val("editPaymentDelayDays"),payment_delay_reason:$("editPaymentDelayReason").value||null,
+  material_collection_delay_days:val("editMaterialDelayDays"),material_collection_delay_reason:$("editMaterialDelayReason").value||null,
+  ceg_service_designed:$("editCegDesigned").value===""?null:$("editCegDesigned").value==="true",updated_by:user.id
+ });
+ if(error){alert(error.message);return}
+ alert("Admin tracking updated");hideForms();await load();
 }
 async function addPayment(){
  const amount=Number($("paymentAmount").value);
@@ -328,6 +361,7 @@ $("loginBtn").onclick=login;
 $("signupBtn").onclick=signup;
 $("logoutBtn").onclick=logout;
 $("saveCompany").onclick=addCompany;
+$("saveAdminTracking").onclick=saveAdminTracking;
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
 $("savePayment").onclick=addPayment;
