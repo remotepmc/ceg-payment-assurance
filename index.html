@@ -108,9 +108,9 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 
 <section id="adminClientWorkspace" class="panel hidden">
 <div class="client-tabbar admin-workspace-tabs">
- <button type="button" class="client-tab active" data-admin-tab="adminSubmissionsPanel" onclick="switchAdminWorkspaceTab('adminSubmissionsPanel')">Client Submissions</button>
- <button type="button" class="client-tab" data-admin-tab="adminSummaryPanel" onclick="switchAdminWorkspaceTab('adminSummaryPanel')">18-Column Summary</button>
- <button type="button" class="client-tab" data-admin-tab="adminReportsPanel" onclick="switchAdminWorkspaceTab('adminReportsPanel')">Reports</button>
+ <button type="button" class="client-tab active" data-admin-tab="adminSubmissionsPanel" aria-controls="adminSubmissionsPanel" aria-selected="true">Client Submissions</button>
+ <button type="button" class="client-tab" data-admin-tab="adminSummaryPanel" aria-controls="adminSummaryPanel" aria-selected="false">18-Column Summary</button>
+ <button type="button" class="client-tab" data-admin-tab="adminReportsPanel" aria-controls="adminReportsPanel" aria-selected="false">Reports</button>
 </div>
 <section id="adminSubmissionsPanel" class="client-project-tab">
  <h3>Client Submissions</h3>
@@ -1191,30 +1191,18 @@ function switchAdminWorkspaceTab(target){
 }
 window.switchAdminWorkspaceTab=switchAdminWorkspaceTab;
 
-// Mobile-safe Admin tab activation: handle the physical pointer/touch release
-// at document capture, then bind each tab directly as a fallback.
-function activateAdminTabFromEvent(event){
- const button=event.target&&event.target.closest?event.target.closest("#adminClientWorkspace button[data-admin-tab]"):null;
- if(!button)return;
- if(event.cancelable)event.preventDefault();
- switchAdminWorkspaceTab(button.getAttribute("data-admin-tab"));
+// One delegated click handler for all Admin workspace tabs.
+// Avoid duplicate pointerup/click handlers, which can suppress or double-fire
+// activation on mobile browsers and embedded webviews.
+const adminWorkspaceTabs=$("adminClientWorkspace")?.querySelector(".admin-workspace-tabs");
+if(adminWorkspaceTabs){
+ adminWorkspaceTabs.addEventListener("click",event=>{
+  const button=event.target.closest("button[data-admin-tab]");
+  if(!button||!adminWorkspaceTabs.contains(button))return;
+  event.preventDefault();
+  switchAdminWorkspaceTab(button.dataset.adminTab);
+ });
 }
-document.addEventListener("pointerup",activateAdminTabFromEvent,true);
-document.querySelectorAll("#adminClientWorkspace button[data-admin-tab]").forEach(button=>{
- button.addEventListener("pointerup",event=>{
-  if(event.cancelable)event.preventDefault();
-  switchAdminWorkspaceTab(button.getAttribute("data-admin-tab"));
- },{passive:false});
- button.setAttribute("aria-controls",button.getAttribute("data-admin-tab"));
- button.setAttribute("aria-selected",button.classList.contains("active")?"true":"false");
-});
-document.querySelector("#adminClientWorkspace .admin-workspace-tabs")?.addEventListener("click",event=>{
- const button=event.target.closest("button[data-admin-tab]");
- if(!button)return;
- event.preventDefault();
- event.stopPropagation();
- switchAdminWorkspaceTab(button.getAttribute("data-admin-tab"));
-},true);
 document.addEventListener("click",e=>{
  const clientTab=e.target.closest("[data-client-tab]");
  if(clientTab){
