@@ -62,6 +62,12 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 @media(max-width:650px){.records-layout{display:block}.client-sidebar{width:100%;min-width:0;margin-bottom:10px}.client-nav{width:auto;display:inline-block}}
 
 .cc-header{text-align:center}.cc-header .cc-whatsapp{display:inline-block;background:#fff;color:#123d75;text-decoration:none;font-weight:bold;padding:10px 16px;border-radius:24px;margin-bottom:12px}.cc-header .cc-brand{font-size:30px;font-weight:800;letter-spacing:.3px}.cc-footer{background:#123d75;color:#fff;margin-top:24px;padding:24px 16px;text-align:center;font-size:22px}.cc-footer p{margin:8px 0;color:#d5e3f5}.cc-footer nav{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:12px 20px;margin:14px auto;max-width:900px}.cc-footer a{color:#fff;text-decoration:underline;font-weight:bold;overflow-wrap:anywhere}@media(max-width:480px){.cc-header{padding:18px 12px}.cc-footer nav{flex-direction:column;gap:12px}.cc-footer{font-size:20px}}
+
+.form-section{border:1px solid #dce5ef;border-radius:12px;padding:14px;margin:14px 0;background:#fbfcfe}
+.form-section h4{margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #e4ebf3;color:#174777;font-size:17px;letter-spacing:.2px}
+.form-section label{margin-top:11px}
+.form-section input,.form-section select{margin-bottom:5px}
+.client-view .admin-only-field{display:none!important}
 </style>
 </head>
 <body>
@@ -124,25 +130,32 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 </div>
 <div id="projectForm" class="panel hidden">
 <h3>Add Project</h3>
+<div class="form-section"><h4>1. Project Details</h4>
 <div id="projectClientAdminOnly"><label>Select Client</label><select id="projectClient"></select></div>
 <label>Project Name</label><input id="projectName">
 <label>Project Type</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
+</div>
+<div class="form-section"><h4>2. Project Timeline</h4>
 <label>Project Start Date *</label><input id="projectStart" type="date" required data-start-for="expectedProjectEnd">
 <label>Expected Project End Date *</label><select id="expectedProjectEnd" required data-start-id="projectStart"><option value="">Select start date first</option></select>
 <label>Actual Project End Date</label><input id="projectEnd" type="date" data-date-role="actual">
 <label>Project Hold</label><select id="projectHold"><option value="false">No</option><option value="true">Yes</option></select>
-<label>Project Execution / WIP Delay Reason</label><select id="projectWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
-
+<div class="admin-only-field"><label>Project Execution / WIP Delay Reason</label><select id="projectWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select></div>
+</div>
+<div class="form-section"><h4>3. Billing & Materials</h4>
 <label>Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
 <label>Billing Date</label><input id="billingDate" type="date" data-date-role="billing">
 <label>Billing Amount with Tax (INR, whole rupees)</label><input id="billingAmount" type="number" min="0" step="1">
 <label>Material Dispatch Date</label><input id="materialDispatch" type="date" data-date-role="dispatch">
 <label>Billing Delay Reason</label><select id="projectBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Material Delivered Date</label><input id="materialDelivered" type="date" data-date-role="delivered">
+</div>
+<div class="form-section"><h4>4. Payment Details</h4>
 <label>Payment Made</label><select id="projectPaymentType"><option value="">Select payment type</option><option value="Full">Full</option><option value="Part">Part</option></select>
 <label>Payment Amount (INR)</label><input id="projectPaymentAmount" type="number" min="0.01" step="0.01">
 <label>Payment Made Date</label><input id="projectPaymentDate" type="date">
 <label>Payment Delay Reason</label><select id="projectPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
+</div>
 <p class="muted">Auto-sync: Billing Date = Dispatch Date; Delivered Date = Billing Date + 7 days; Actual End Date follows Delivered Date. You can manually edit Actual End Date when needed. Client payment entries are saved as recorded and require Admin verification.</p>
 
 <button id="saveProject">Save Project</button>
