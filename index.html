@@ -1090,7 +1090,9 @@ $("saveProject").onclick=addProject;
  $("revProjectStart").addEventListener("change",()=>refreshExpectedDate("revProjectStart","revExpectedProjectEnd",""));
 $("savePayment").onclick=addPayment;
 $("refreshBtn").onclick=load;
-$("exportBtn").onclick=exportCSV;\n$("downloadAdminExcelBtn").onclick=downloadAdminExcel;\n$("downloadAdminCsvBtn").onclick=downloadAdminCsv;
+$("exportBtn").onclick=exportCSV;
+$("downloadAdminExcelBtn").onclick=downloadAdminExcel;
+$("downloadAdminCsvBtn").onclick=downloadAdminCsv;
 
 ["recordSearch","filterCompany","filterClient","filterCategory","filterProjectType","filterHold"].forEach(id=>$(id).addEventListener("input",renderRecords));
 $("paymentDate").value=new Date().toISOString().slice(0,10);
