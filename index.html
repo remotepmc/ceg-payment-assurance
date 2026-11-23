@@ -354,12 +354,16 @@ function addCalendarDays(iso,days){
  const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+days);
  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
-function syncMaterialDateChain(role,suffix=""){
- const get=id=>$(id+suffix),dispatch=get("materialDispatch")||get("revMaterialDispatch")||get("ce_dispatch"),
-       billing=get("billingDate")||get("revBillingDate")||get("ce_billdate"),
-       delivered=get("materialDelivered")||get("revMaterialDelivered")||get("ce_delivered"),
-       actual=get("projectEnd")||get("revProjectEnd")||get("ce_actual");
+function syncMaterialDateChain(sourceId,suffix=""){
+ const prefix=sourceId.startsWith("ce_")?"ce_":sourceId.startsWith("rev")?"rev":"";
+ const ids=prefix==="ce_"
+  ?{dispatch:"ce_dispatch",billing:"ce_billdate",delivered:"ce_delivered",actual:"ce_actual"}
+  :prefix==="rev"
+  ?{dispatch:"revMaterialDispatch",billing:"revBillingDate",delivered:"revMaterialDelivered",actual:"revProjectEnd"}
+  :{dispatch:"materialDispatch",billing:"billingDate",delivered:"materialDelivered",actual:"projectEnd"};
+ const dispatch=$(ids.dispatch+suffix),billing=$(ids.billing+suffix),delivered=$(ids.delivered+suffix),actual=$(ids.actual+suffix);
  if(!dispatch||!billing||!delivered||!actual)return;
+ const role=dispatch.id===sourceId?"dispatch":billing.id===sourceId?"billing":delivered.id===sourceId?"delivered":"actual";
  if(role==="dispatch"){billing.value=dispatch.value;delivered.value=addCalendarDays(dispatch.value,7);actual.value=delivered.value;}
  else if(role==="billing"){dispatch.value=billing.value;delivered.value=addCalendarDays(billing.value,7);actual.value=delivered.value;}
  else if(role==="delivered"){actual.value=delivered.value;}
@@ -769,7 +773,7 @@ $("trackingProject").onchange=()=>{
 };
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
- document.addEventListener("change",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.dataset.dateRole,suffix);});
+ document.addEventListener("change",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.id,suffix);});
   $("projectStart").addEventListener("change",()=>calculateExpectedEnd("projectStart","expectedProjectEnd"));
  $("revProjectStart").addEventListener("change",()=>calculateExpectedEnd("revProjectStart","revExpectedProjectEnd"));
  document.addEventListener("change",e=>{const start=e.target.closest("[data-start-for]");if(start){const endId=start.dataset.startFor;refreshExpectedDate(start.id,endId);}});
