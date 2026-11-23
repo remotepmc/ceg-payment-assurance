@@ -356,6 +356,10 @@ async function start(){
   $("adminClientWorkspace").classList.remove("hidden");
   $("adminProjectFormHost").appendChild($("projectForm"));
   renderAdminClientSubmissions();
+ }else{
+  $("adminClientWorkspace").classList.add("hidden");
+  $("staff").appendChild($("projectForm"));
+  $("projectForm").classList.add("hidden");
  }
  $("staff").classList.remove("hidden");
 }
