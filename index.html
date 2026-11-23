@@ -131,13 +131,19 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Expected Project End Date *</label><select id="expectedProjectEnd" required data-start-id="projectStart"><option value="">Select start date first</option></select>
 <label>Actual Project End Date</label><input id="projectEnd" type="date" data-date-role="actual">
 <label>Project Hold</label><select id="projectHold"><option value="false">No</option><option value="true">Yes</option></select>
+<label>Project Execution / WIP Delay Reason</label><select id="projectWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
 
 <label>Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
 <label>Billing Date</label><input id="billingDate" type="date" data-date-role="billing">
 <label>Billing Amount with Tax (INR, whole rupees)</label><input id="billingAmount" type="number" min="0" step="1">
 <label>Material Dispatch Date</label><input id="materialDispatch" type="date" data-date-role="dispatch">
+<label>Billing Delay Reason</label><select id="projectBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Material Delivered Date</label><input id="materialDelivered" type="date" data-date-role="delivered">
-<p class="muted">Auto-sync: Billing Date = Dispatch Date; Delivered Date = Billing Date + 7 days; Actual End Date follows Delivered Date. You can manually edit Actual End Date when needed.</p>
+<label>Payment Made</label><select id="projectPaymentType"><option value="">Select payment type</option><option value="Full">Full</option><option value="Part">Part</option></select>
+<label>Payment Amount (INR)</label><input id="projectPaymentAmount" type="number" min="0.01" step="0.01">
+<label>Payment Made Date</label><input id="projectPaymentDate" type="date">
+<label>Payment Delay Reason</label><select id="projectPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
+<p class="muted">Auto-sync: Billing Date = Dispatch Date; Delivered Date = Billing Date + 7 days; Actual End Date follows Delivered Date. You can manually edit Actual End Date when needed. Client payment entries are saved as recorded and require Admin verification.</p>
 
 <button id="saveProject">Save Project</button>
 <button data-close="projectForm" class="secondary">Cancel</button>
@@ -151,7 +157,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Expected Project End Date *</label><select id="revExpectedProjectEnd" required><option value="">Select start date first</option></select>
 <label>Actual Project End Date</label><input id="revProjectEnd" type="date" data-date-role="actual">
 <label>Project Hold</label><select id="revProjectHold"><option value="false">No</option><option value="true">Yes</option></select>
-<label>Project Execution / WIP Delay Reason</label><select id="revWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
+<label>Project Execution / WIP Delay Reason</label><select id="revWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
 <label>Billing Done</label><select id="revBillingDone"><option value="false">No</option><option value="true">Yes</option></select>
 <label>Billing Date</label><input id="revBillingDate" type="date" data-date-role="billing">
 <label>Billing Amount with Tax (INR)</label><input id="revBillingAmount" type="number" min="0" step="1">
@@ -159,7 +165,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Material Delivered Date</label><input id="revMaterialDelivered" type="date" data-date-role="delivered">
 <p class="muted">Auto-sync: Billing Date = Dispatch Date; Delivered Date = Billing Date + 7 days; Actual End Date follows Delivered Date. You can manually edit Actual End Date when needed.</p>
 
-<label>Execution / WIP Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
+<label>Execution / WIP Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
 <label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Payment Delay Reason</label><select id="editPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>CEG Service Designed (Admin Only)</label><select id="editCegDesigned"><option value="">Select CEG service</option><option value="Action Plan — ₹299*">Action Plan — Chhota, powerful first step — ₹299*</option><option value="Aapka Naksha 2D — ₹999*">Aapka Naksha 2D — Plot-based 2D layout guidance — ₹999*</option><option value="Site Anusasan Online — ₹1,999*">Site Anusasan Online — Site discipline, work sequence and quality — ₹1,999*</option><option value="Sales ki Bhasha Online — ₹1,999*">Sales ki Bhasha Online — Client communication and sales follow-up — ₹1,999*</option><option value="Be Prepared Online — ₹1,999*">Be Prepared Online — Pre-start checklist — ₹1,999*</option><option value="KYG — Know Your Ghar — ₹1,999*">KYG — Know Your Ghar — Home planning and quality checks — ₹1,999*</option><option value="KYW — Know Your Work — ₹2,999*">KYW — Know Your Work — Work scope and responsibility clarity — ₹2,999*</option><option value="ANGAD — Aapka Doot — ₹4,999*">ANGAD — Aapka Doot — Connect the right people and manage follow-ups — ₹4,999*</option><option value="Third Eye Remote PMC — ₹12,000*">Third Eye Remote PMC — Remote monitoring, reviews and quality checks — ₹12,000*</option></select>
@@ -313,8 +319,8 @@ async function start(){
 async function load(){
  const [c,p,pa,co,at,pr]=await Promise.all([
   db.from("clients").select("id,client_name,email,phone,user_id,company_id,client_category"),
-  db.from("projects").select("id,client_id,project_code,project_name,project_value,status,workflow_stage,revision_no,finalized_at,finalized_by,project_type,project_start_date,project_end_date,expected_duration_days,expected_project_end_date,actual_project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date"),
-  db.from("payments").select("id,project_id,amount,payment_date,payment_mode,reference_number,status").order("payment_date",{ascending:false}),
+  db.from("projects").select("id,client_id,project_code,project_name,project_value,status,workflow_stage,revision_no,finalized_at,finalized_by,project_type,project_start_date,project_end_date,expected_duration_days,expected_project_end_date,actual_project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date,billing_delay_reason,payment_delay_reason"),
+  db.from("payments").select("id,project_id,amount,payment_date,payment_mode,payment_type,reference_number,status").order("payment_date",{ascending:false}),
   db.from("companies").select("id,company_name").order("company_name"),
   db.from("project_admin_tracking").select("*"),
   db.from("project_revisions").select("id,project_id,revision_no,revision_type,revision_note,created_at,created_by").order("revision_no",{ascending:true})
@@ -414,7 +420,7 @@ function renderRecords(){
  $("recordsBody").innerHTML=rows.map(p=>{
   const cl=clients.find(x=>x.id===p.client_id)||{},v=Number(p.billing_amount_with_tax??p.project_value??0),got=paid(p.id),t=adminTracking.find(x=>x.project_id===p.id)||{};
   const d=delayInfo(p);
-  const cells=[p.project_code||"—",p.workflow_stage==="final"?"Final Project":"Add Revision",p.revision_no||1,cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.expected_project_end_date||"—",p.actual_project_end_date||p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",d.execution.days??"—",t.project_delay_reason||"—",d.billing.days??"—",t.billing_delay_reason||"—",d.payment.days??"—",t.payment_delay_reason||"—",money(got),money(v-got)];
+  const cells=[p.project_code||"—",p.workflow_stage==="final"?"Final Project":"Add Revision",p.revision_no||1,cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.expected_project_end_date||"—",p.actual_project_end_date||p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",d.execution.days??"—",t.project_delay_reason||p.wip_delay_reason||"—",d.billing.days??"—",t.billing_delay_reason||p.billing_delay_reason||"—",d.payment.days??"—",t.payment_delay_reason||p.payment_delay_reason||"—",money(got),money(v-got)];
   if(admin)cells.push(t.ceg_service_designed||"—");
   return "<tr>"+cells.map(x=>"<td>"+esc(x)+"</td>").join("")+"</tr>";
  }).join("")||'<tr><td colspan="'+headers.length+'">No matching records</td></tr>';
@@ -543,7 +549,7 @@ function render(){
  $("history").innerHTML=payments.length?payments.map(p=>{
   const project=projects.find(x=>x.id===p.project_id);
   const buttons=isAdmin()&&p.status==="recorded"?`<p><button data-verify="${p.id}" data-status="verified">Verify</button><button class="danger" data-verify="${p.id}" data-status="rejected">Reject</button></p>`:"";
-  return `<div class="project"><b>${money(p.amount)}</b><p>${esc(project?.project_name||"Project")} | ${esc(p.payment_date||"")}</p><p>${esc(p.payment_mode||"")} | Ref: ${esc(p.reference_number||"Not provided")}</p><span class="badge">${esc(p.status)}</span>${buttons}</div>`;
+  return `<div class="project"><b>${money(p.amount)}</b><p>${esc(project?.project_name||"Project")} | ${esc(p.payment_date||"")}</p><p>${esc(p.payment_type||"")} ${esc(p.payment_mode||"")} | Ref: ${esc(p.reference_number||"Not provided")}</p><span class="badge">${esc(p.status)}</span>${buttons}</div>`;
  }).join(""):"<p class='muted'>No payment records yet.</p>";
   const admin=isAdmin();
  $("addEntryBtn").classList.remove("hidden");
@@ -627,17 +633,25 @@ async function addClient(){
  hideForms();await load();
 }
 async function addProject(){
- const name=$("projectName").value.trim(),billing= $("billingAmount").value;
- 
+ const name=$("projectName").value.trim(),billing=$("billingAmount").value;
  const clientId=$("projectClient").value;
  if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project End Date are mandatory.");return}
- const dispatchDate=$("materialDispatch").value||null, deliveredDate=$("materialDelivered").value||addCalendarDays(dispatchDate,7);
- const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:dispatchDate,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||deliveredDate||null,project_end_date:$("projectEnd").value||deliveredDate||null,project_hold:$("projectHold").value==="true",material_dispatch_date:dispatchDate,material_delivered_date:deliveredDate,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value;
+ const hasPayment=!!(payType||payAmount||payDate);
+ if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter the payment amount and payment date.");return}
+ const dispatchDate=$("materialDispatch").value||null,deliveredDate=$("materialDelivered").value||addCalendarDays(dispatchDate,7);
+ const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:dispatchDate,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||deliveredDate||null,project_end_date:$("projectEnd").value||deliveredDate||null,project_hold:$("projectHold").value==="true",wip_delay_reason:$("projectWipReason").value||null,billing_delay_reason:$("projectBillingDelayReason").value||null,payment_delay_reason:$("projectPaymentDelayReason").value||null,material_dispatch_date:dispatchDate,material_delivered_date:deliveredDate,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("*").single();
  if(error){alert(error.message);return}
  const {error:historyError}=await db.from("project_revisions").insert({project_id:data.id,revision_no:1,revision_type:"submission",revision_data:data,revision_note:"Initial project submitted for Admin review",created_by:user.id});
  if(historyError){alert("Project saved, but initial revision history could not be saved: "+historyError.message);return}
- alert("Project submitted for Admin revision. Project ID: "+data.project_code+" | Revision 1");hideForms();await load();
+ if(hasPayment){
+  const admin=isAdmin();
+  const paymentPayload={project_id:data.id,amount:Number(payAmount),payment_date:payDate,payment_type:payType,status:admin?"verified":"recorded",recorded_by:user.id,verified_by:admin?user.id:null,notes:admin?"Entered by Admin with project creation":"Submitted by Client for Admin verification"};
+  const {error:paymentError}=await db.from("payments").insert(paymentPayload);
+  if(paymentError){alert("Project saved, but payment entry failed: "+paymentError.message);hideForms();await load();return}
+ }
+ alert(isAdmin()?"Project saved successfully"+(hasPayment?" with verified payment entry.":"."):"Project submitted for Admin revision"+(hasPayment?" with payment pending Admin verification.":"")+" Project ID: "+data.project_code+" | Revision 1");hideForms();await load();
 }
 async function saveAdminTracking(){
  if(!isAdmin()){alert("Only Admin can add a revision.");return}
