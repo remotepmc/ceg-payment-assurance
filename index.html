@@ -300,7 +300,7 @@ async function start(){
  profile=data;
  $("auth").classList.add("hidden");
  $("app").classList.remove("hidden");
- $("welcome").textContent="Welcome, "+(profile.full_name||user.email);
+ $("welcome").textContent=isAdmin()?"Welcome Admin":"Welcome Client";
  $("roleText").textContent="Account role: "+profile.role.replaceAll("_"," ");
  document.body.classList.toggle("client-view",!isAdmin());
  $("dashboardTitle").textContent=isAdmin()?"Admin Control Centre":"My Project Portal";
