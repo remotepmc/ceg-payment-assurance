@@ -183,7 +183,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <label>20. Money Leakage (₹)</label><input id="projectMoneyLeakage" type="number" min="0" step="0.01">
 <label>21. Remarks</label><textarea id="projectRemarks" placeholder="Enter project remarks"></textarea></div>
 <p class="muted">Saved projects are automatically visible to Admin. No separate submission or resubmission step is required. Client payment entries remain pending Admin verification.</p>
-<button id="saveProject">Save Project</button><button data-close="projectForm" class="secondary">Cancel</button></div>
+<button id="saveProject">Save Project</button><button type="button" id="publishClientProjectBtn" class="secondary hidden">Save & Publish Final Project</button><button data-close="projectForm" class="secondary">Cancel</button></div>
 <div id="adminTrackingForm" class="panel hidden">
 <h3>Add Revision (Admin)</h3>
 <label id="trackingProjectLabel">Select Project</label><select id="trackingProject"></select>
@@ -477,6 +477,7 @@ function closeAdminProjectEditor(){
  $("saveProject").textContent="Save Project";
  $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Generate Project ID";
  $("projectClientAdminOnly").classList.remove("hidden");
+ $("publishClientProjectBtn").classList.add("hidden");
  $("adminSubmissionList").classList.remove("hidden");
 }
 function openClientSubmittedProject(projectId){
@@ -489,6 +490,7 @@ function openClientSubmittedProject(projectId){
  const latest=latestPayments.length?latestPayments[latestPayments.length-1]:null;
  $("projectForm").querySelector("h3").textContent="Edit Client Project · "+(p.project_code||"");
  $("saveProject").textContent="Save Project Changes";
+ $("publishClientProjectBtn").classList.remove("hidden");
  $("projectClientAdminOnly").classList.add("hidden");
  $("projectClient").value=p.client_id||"";
  $("projectCegDate").value=p.created_at?String(p.created_at).slice(0,10):"";
@@ -518,7 +520,7 @@ function openClientSubmittedProject(projectId){
  $("projectForm").classList.remove("hidden");
  $("projectForm").scrollIntoView({behavior:"smooth",block:"start"});
 }
-async function saveClientSubmittedProject(){
+async function saveClientSubmittedProject(publishAfterSave=false){
  const projectId=adminEditingClientProjectId;
  const original=projects.find(p=>p.id===projectId);
  if(!original){alert("Project not found. Refresh and try again.");return}
@@ -559,6 +561,7 @@ async function saveClientSubmittedProject(){
  closeAdminProjectEditor();
  alert("Client project updated. Project ID remains "+(updated.project_code||projectId)+". Workflow status and revision number were preserved.");
  await load();
+ if(publishAfterSave)await finalizeProject(projectId);
 }
 
 function renderAdminClientSidebar(){
@@ -1080,6 +1083,7 @@ $("trackingProject").onchange=()=>{
 $("closeAdminProjectDetail").onclick=()=>$("adminProjectDetail").classList.add("hidden");
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
+$("publishClientProjectBtn").onclick=()=>{if(adminEditingClientProjectId)saveClientSubmittedProject(true);};
  document.addEventListener("input",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.id,suffix);});
  document.addEventListener("change",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.id,suffix);});
   document.addEventListener("pointerdown",e=>{const end=e.target.closest("select[data-start-id]");if(end)refreshExpectedDate(end.dataset.startId,end.id,"");},true);
