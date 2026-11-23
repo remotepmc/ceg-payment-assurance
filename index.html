@@ -119,8 +119,10 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <div id="projectClientAdminOnly"><label>Select Client</label><select id="projectClient"></select></div>
 <label>Project Name</label><input id="projectName">
 <label>Project Type</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
-<label>Project Start Date</label><input id="projectStart" type="date">
-<label>Project End Date</label><input id="projectEnd" type="date">
+<label>Project Start Date *</label><input id="projectStart" type="date" required>
+<label>Expected Project Duration *</label><select id="projectDuration" required><option value="">Select expected duration</option><option value="2">+2 days — Material supply / very small work</option><option value="15">+15 days — Small execution work</option><option value="45">+45 days</option><option value="90">+90 days</option><option value="200">+200 days</option><option value="400">+400 days</option></select>
+<label>Expected Project End Date *</label><input id="expectedProjectEnd" type="date" readonly required>
+<label>Actual Project End Date</label><input id="projectEnd" type="date">
 <label>Project Hold</label><select id="projectHold"><option value="false">No</option><option value="true">Yes</option></select>
 
 <label>Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
@@ -137,8 +139,10 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <label>Select Project</label><select id="trackingProject"></select>
 <label>Project Name</label><input id="revProjectName">
 <label>Project Type</label><select id="revProjectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
-<label>Project Start Date</label><input id="revProjectStart" type="date">
-<label>Project End Date</label><input id="revProjectEnd" type="date">
+<label>Project Start Date *</label><input id="revProjectStart" type="date" required>
+<label>Expected Project Duration *</label><select id="revProjectDuration" required><option value="">Select expected duration</option><option value="2">+2 days — Material supply / very small work</option><option value="15">+15 days — Small execution work</option><option value="45">+45 days</option><option value="90">+90 days</option><option value="200">+200 days</option><option value="400">+400 days</option></select>
+<label>Expected Project End Date *</label><input id="revExpectedProjectEnd" type="date" readonly required>
+<label>Actual Project End Date</label><input id="revProjectEnd" type="date">
 <label>Project Hold</label><select id="revProjectHold"><option value="false">No</option><option value="true">Yes</option></select>
 <label>Project Execution / WIP Delay Reason</label><select id="revWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Billing Done</label><select id="revBillingDone"><option value="false">No</option><option value="true">Yes</option></select>
@@ -287,7 +291,7 @@ async function start(){
 async function load(){
  const [c,p,pa,co,at,pr]=await Promise.all([
   db.from("clients").select("id,client_name,email,phone,user_id,company_id,client_category"),
-  db.from("projects").select("id,client_id,project_code,project_name,project_value,status,workflow_stage,revision_no,finalized_at,finalized_by,project_type,project_start_date,project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date"),
+  db.from("projects").select("id,client_id,project_code,project_name,project_value,status,workflow_stage,revision_no,finalized_at,finalized_by,project_type,project_start_date,project_end_date,expected_duration_days,expected_project_end_date,actual_project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date"),
   db.from("payments").select("id,project_id,amount,payment_date,payment_mode,reference_number,status").order("payment_date",{ascending:false}),
   db.from("companies").select("id,company_name").order("company_name"),
   db.from("project_admin_tracking").select("*"),
@@ -317,10 +321,12 @@ function dateDays(from,to){
  const a=Date.parse(String(from).slice(0,10)+"T00:00:00Z"),b=Date.parse(String(to).slice(0,10)+"T00:00:00Z");
  return Number.isFinite(a)&&Number.isFinite(b)?Math.max(0,Math.floor((b-a)/86400000)):null;
 }
+function calculateExpectedEnd(startId,durationId,endId){const start=$(startId).value,days=Number($(durationId).value);if(!start||!days){$(endId).value="";return}const d=new Date(start+"T12:00:00");d.setDate(d.getDate()+days);$(endId).value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function delayInfo(project){
  const today=new Date().toISOString().slice(0,10);
- const executionDays=!project.project_end_date&&project.project_start_date?dateDays(project.project_start_date,today):null;
- const completionBase=project.project_end_date||project.material_delivered_date||null;
+ const actualEnd=project.actual_project_end_date||project.project_end_date||null;
+ const executionDays=project.expected_project_end_date?dateDays(project.expected_project_end_date,actualEnd||today):null;
+ const completionBase=actualEnd||project.material_delivered_date||null;
  const billingDays=completionBase?dateDays(completionBase,project.billing_done?(project.billing_date||today):today):null;
  const billDate=project.billing_date||null,fullDate=fullCollectionDate(project);
  const paymentTarget=Number(project.billing_amount_with_tax||project.project_value||0);
@@ -344,7 +350,7 @@ function renderAdminClientSidebar(){
 }
 function renderRecords(){
  const admin=profile.role==="admin";
- const headers=["Project ID","Workflow Stage","Revision No.","Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Project End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Material Collection Date","Execution Delay Days","Execution Delay Reason","Billing Delay Days","Billing Delay Reason","Payment Delay Days","Payment Delay Reason","Total Verified","Outstanding"];
+ const headers=["Project ID","Workflow Stage","Revision No.","Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Expected End Date","Actual End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Material Collection Date","Execution Delay Days","Execution Delay Reason","Billing Delay Days","Billing Delay Reason","Payment Delay Days","Payment Delay Reason","Total Verified","Outstanding"];
  if(admin)headers.push("CEG Service Designed");
  $("recordsHead").innerHTML="<tr>"+headers.map(h=>"<th>"+h+"</th>").join("")+"</tr>";
  const companyById=id=>companies.find(x=>x.id===id)?.company_name||"—";
@@ -358,7 +364,7 @@ function renderRecords(){
  $("recordsBody").innerHTML=rows.map(p=>{
   const cl=clients.find(x=>x.id===p.client_id)||{},v=Number(p.billing_amount_with_tax??p.project_value??0),got=paid(p.id),t=adminTracking.find(x=>x.project_id===p.id)||{};
   const d=delayInfo(p);
-  const cells=[p.project_code||"—",p.workflow_stage==="final"?"Final Project":"Add Revision",p.revision_no||1,cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",d.execution.days??"—",t.project_delay_reason||"—",d.billing.days??"—",t.billing_delay_reason||"—",d.payment.days??"—",t.payment_delay_reason||"—",money(got),money(v-got)];
+  const cells=[p.project_code||"—",p.workflow_stage==="final"?"Final Project":"Add Revision",p.revision_no||1,cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.expected_project_end_date||"—",p.actual_project_end_date||p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",d.execution.days??"—",t.project_delay_reason||"—",d.billing.days??"—",t.billing_delay_reason||"—",d.payment.days??"—",t.payment_delay_reason||"—",money(got),money(v-got)];
   if(admin)cells.push(t.ceg_service_designed||"—");
   return "<tr>"+cells.map(x=>"<td>"+esc(x)+"</td>").join("")+"</tr>";
  }).join("")||'<tr><td colspan="'+headers.length+'">No matching records</td></tr>';
@@ -390,7 +396,7 @@ function render(){
   const badge=(label,item,reason)=>item.days===null?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
   const adminActions=isAdmin()&&p.workflow_stage!=="final"?`<p><button data-revise="${p.id}">Open Add Revision</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:"";
-  return `<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name)}</b><p>Revision: ${Number(p.revision_no||1)} | Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | End: ${esc(p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p>${isAdmin()?`<p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p><p>${badge("Execution delay",d.execution,t.project_delay_reason)} ${badge("Billing delay",d.billing,t.billing_delay_reason)} ${badge("Payment delay",d.payment,t.payment_delay_reason)}</p><p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p>`:`<p><span class="status ${p.workflow_stage==="final"?"green":"yellow"}">${p.workflow_stage==="final"?"Final Project Approved":"Under Admin Review"}</span></p>`}<div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div><details><summary>Revision History (${projectRevisions.filter(r=>r.project_id===p.id).length})</summary><ol>${history||"<li>No history recorded</li>"}</ol></details>${adminActions}</div>`;
+  return `<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name)}</b><p>Revision: ${Number(p.revision_no||1)} | Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | Expected End: ${esc(p.expected_project_end_date||"—")} | Actual End: ${esc(p.actual_project_end_date||p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p>${isAdmin()?`<p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p><p>${badge("Execution delay",d.execution,t.project_delay_reason)} ${badge("Billing delay",d.billing,t.billing_delay_reason)} ${badge("Payment delay",d.payment,t.payment_delay_reason)}</p><p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p>`:`<p><span class="status ${p.workflow_stage==="final"?"green":"yellow"}">${p.workflow_stage==="final"?"Final Project Approved":"Under Admin Review"}</span></p>`}<div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div><details><summary>Revision History (${projectRevisions.filter(r=>r.project_id===p.id).length})</summary><ol>${history||"<li>No history recorded</li>"}</ol></details>${adminActions}</div>`;
  };
  const pendingProjects=projects.filter(p=>p.workflow_stage!=="final");
  const finalProjects=projects.filter(p=>p.workflow_stage==="final");
@@ -453,8 +459,8 @@ async function addProject(){
  const name=$("projectName").value.trim(),billing= $("billingAmount").value;
  
  const clientId=$("projectClient").value;
- if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value){alert("Save an Add Entry first, then select your entry and enter project name and type.");return}
- const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value||!$("projectStart").value||!$("projectDuration").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project Duration are mandatory.");return}
+ const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:Number($("projectDuration").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("*").single();
  if(error){alert(error.message);return}
  const {error:historyError}=await db.from("project_revisions").insert({project_id:data.id,revision_no:1,revision_type:"submission",revision_data:data,revision_note:"Initial project submitted for Admin review",created_by:user.id});
@@ -471,6 +477,9 @@ async function saveAdminTracking(){
   project_name:$("revProjectName").value.trim(),
   project_type:$("revProjectType").value||null,
   project_start_date:$("revProjectStart").value||null,
+   expected_duration_days:Number($("revProjectDuration").value),
+   expected_project_end_date:$("revExpectedProjectEnd").value||null,
+   actual_project_end_date:$("revProjectEnd").value||null,
   project_end_date:$("revProjectEnd").value||null,
   project_hold:$("revProjectHold").value==="true",
   wip_delay_reason:$("revWipReason").value||null,
@@ -482,7 +491,7 @@ async function saveAdminTracking(){
   material_delivered_date:$("revMaterialDelivered").value||null,
   material_collection_date:$("revMaterialCollection").value||null
  };
- if(!projectChanges.project_name||!projectChanges.project_type){alert("Project Name and Project Type are required.");return}
+ if(!projectChanges.project_name||!projectChanges.project_type||!projectChanges.project_start_date||!projectChanges.expected_duration_days||!projectChanges.expected_project_end_date){alert("Project Name, Project Type, Start Date and Expected Duration are mandatory.");return}
  const {error:projectEditError}=await db.from("projects").update(projectChanges).eq("id",projectId);
  if(projectEditError){alert("Project details could not be revised: "+projectEditError.message);return}
  const trackingPayload={
@@ -513,7 +522,8 @@ async function finalizeProject(projectId){
  if(!isAdmin()){alert("Only Admin can finalise a project.");return}
  const project=projects.find(p=>p.id===projectId);
  if(!project){alert("Project not found.");return}
- if(!confirm("Approve "+project.project_code+" as a Final Project? This will move it out of Add Revision."))return;
+ if(!project.project_start_date||!project.expected_project_end_date){alert("Cannot approve: Project Start Date and Expected Project End Date are mandatory. Add them in Add Revision first.");return}
+  if(!confirm("Approve "+project.project_code+" as a Final Project? This will move it out of Add Revision."))return;
  const nextRevision=Number(project.revision_no||1)+1;
  const {error}=await db.from("projects").update({
   workflow_stage:"final",revision_no:nextRevision,finalized_at:new Date().toISOString(),finalized_by:user.id
@@ -577,7 +587,9 @@ $("trackingProject").onchange=()=>{
  $("revProjectName").value=p.project_name||"";
  $("revProjectType").value=p.project_type||"";
  $("revProjectStart").value=p.project_start_date||"";
- $("revProjectEnd").value=p.project_end_date||"";
+  $("revProjectDuration").value=String(p.expected_duration_days||"");
+  $("revExpectedProjectEnd").value=p.expected_project_end_date||"";
+ $("revProjectEnd").value=p.actual_project_end_date||p.project_end_date||"";
  $("revProjectHold").value=String(!!p.project_hold);
  $("revWipReason").value=p.wip_delay_reason||"";
  $("revBillingDone").value=String(!!p.billing_done);
@@ -593,6 +605,10 @@ $("trackingProject").onchange=()=>{
 };
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
+ $("projectStart").addEventListener("change",()=>calculateExpectedEnd("projectStart","projectDuration","expectedProjectEnd"));
+ $("projectDuration").addEventListener("change",()=>calculateExpectedEnd("projectStart","projectDuration","expectedProjectEnd"));
+ $("revProjectStart").addEventListener("change",()=>calculateExpectedEnd("revProjectStart","revProjectDuration","revExpectedProjectEnd"));
+ $("revProjectDuration").addEventListener("change",()=>calculateExpectedEnd("revProjectStart","revProjectDuration","revExpectedProjectEnd"));
 $("savePayment").onclick=addPayment;
 $("refreshBtn").onclick=load;
 $("exportBtn").onclick=exportCSV;
