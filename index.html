@@ -65,10 +65,14 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <main>
 <section id="auth" class="panel">
 <h3>Login / Create Account</h3>
+<label>Login Method</label>
+<div class="actions"><button type="button" id="passwordModeBtn">Mobile / Email + Password</button><button type="button" id="whatsappModeBtn" class="secondary">WhatsApp OTP</button></div>
 <label>Email or Mobile Number</label><input id="email" type="text" placeholder="Email or 10-digit mobile number">
-<label>Password</label><input id="password" type="password" placeholder="Password">
-<label>Full Name (new account)</label><input id="fullName" placeholder="Your full name">
+<div id="passwordLoginFields"><label>Password</label><input id="password" type="password" placeholder="Password"></div>
+<div id="otpLoginFields" class="hidden"><label>WhatsApp OTP</label><input id="phoneOtp" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP"><button type="button" id="verifyWhatsAppOtpBtn">Verify OTP & Login</button><p class="muted">First tap “Send WhatsApp OTP”. Use the mobile number registered with CEG.</p></div>
+<label id="fullNameLabel">Full Name (new account)</label><input id="fullName" placeholder="Your full name">
 <button id="loginBtn">Login</button>
+<button id="sendWhatsAppOtpBtn" class="hidden">Send WhatsApp OTP</button>
 <button id="signupBtn" class="secondary">Create Account</button>
 <p id="message" class="muted"></p>
 <p class="notice">New accounts receive Client access. Admin access is assigned separately. To link a Client login, use the same email address or mobile number saved by Admin in the client entry.</p>
@@ -208,12 +212,47 @@ const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function hideForms(){["clientForm","projectForm","adminTrackingForm","paymentForm"].forEach(id=>$(id).classList.add("hidden"))}
 
+let loginMode="password";
+function normalizedPhone(value){
+ const digits=value.replace(/\D/g,"");
+ return digits.length===10?"+91"+digits:value.startsWith("+")?"+"+digits:digits?"+"+digits:"";
+}
+function setLoginMode(mode){
+ loginMode=mode;
+ const otp=mode==="whatsapp";
+ $("passwordLoginFields").classList.toggle("hidden",otp);
+ $("otpLoginFields").classList.toggle("hidden",!otp);
+ $("loginBtn").classList.toggle("hidden",otp);
+ $("sendWhatsAppOtpBtn").classList.toggle("hidden",!otp);
+ $("signupBtn").classList.toggle("hidden",otp);
+ $("fullNameLabel").classList.toggle("hidden",otp);
+ $("fullName").classList.toggle("hidden",otp);
+ $("passwordModeBtn").classList.toggle("secondary",otp);
+ $("whatsappModeBtn").classList.toggle("secondary",!otp);
+ $("message").textContent=otp?"Enter your registered mobile number to receive a WhatsApp code.":"";
+}
 async function login(){
  $("message").textContent="Signing in...";
  const loginId=$("email").value.trim();
-  const digits=loginId.replace(/\D/g,"");
-  const credentials=loginId.includes("@")?{email:loginId,password:$("password").value}:{phone:digits.length===10?"+91"+digits:loginId,password:$("password").value};
-  const {error}=await db.auth.signInWithPassword(credentials);
+ const digits=loginId.replace(/\D/g,"");
+ const credentials=loginId.includes("@")?{email:loginId,password:$("password").value}:{phone:digits.length===10?"+91"+digits:normalizedPhone(loginId),password:$("password").value};
+ const {error}=await db.auth.signInWithPassword(credentials);
+ if(error)$("message").textContent=error.message;
+}
+async function sendWhatsAppOtp(){
+ const loginId=$("email").value.trim();
+ const phone=normalizedPhone(loginId);
+ if(loginId.includes("@")||phone.replace(/\D/g,"").length<10){$("message").textContent="Enter a valid mobile number with country code.";return}
+ $("message").textContent="Requesting WhatsApp OTP...";
+ const {error}=await db.auth.signInWithOtp({phone,options:{channel:"whatsapp",shouldCreateUser:false}});
+ $("message").textContent=error?error.message:"OTP request sent. Check WhatsApp and enter the 6-digit code.";
+}
+async function verifyWhatsAppOtp(){
+ const phone=normalizedPhone($("email").value.trim());
+ const token=$("phoneOtp").value.trim();
+ if(token.length!==6){$("message").textContent="Enter the 6-digit OTP.";return}
+ $("message").textContent="Verifying OTP...";
+ const {error}=await db.auth.verifyOtp({phone,token,type:"sms"});
  if(error)$("message").textContent=error.message;
 }
 async function signup(){
@@ -442,6 +481,10 @@ function exportCSV(){
 }
 
 $("loginBtn").onclick=login;
+$("passwordModeBtn").onclick=()=>setLoginMode("password");
+$("whatsappModeBtn").onclick=()=>setLoginMode("whatsapp");
+$("sendWhatsAppOtpBtn").onclick=sendWhatsAppOtp;
+$("verifyWhatsAppOtpBtn").onclick=verifyWhatsAppOtp;
 $("signupBtn").onclick=signup;
 $("logoutBtn").onclick=logout;
 $("saveAdminTracking").onclick=saveAdminTracking;
