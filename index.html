@@ -482,7 +482,7 @@ function openClientSubmittedProject(projectId){
  $("projectHold").value=String(!!p.project_hold);
  $("projectWipReason").value=p.wip_delay_reason||"";
  $("billingDone").value=String(!!p.billing_done);
- $("billingDate").value=p.billing_date||p.material_dispatch_date||"";
+ $("billingDate").value=p.billing_date||"";
  $("billingAmount").value=p.billing_amount_with_tax??p.project_value??"";
  $("materialDispatch").value=p.material_dispatch_date||"";
  $("materialDelivered").value=p.material_delivered_date||"";
@@ -494,8 +494,7 @@ function openClientSubmittedProject(projectId){
  $("projectRemarks").value=p.client_remarks||"";
  $("projectServiceDetails").value=p.service_details||"";$("projectMoneyLeakage").value=p.money_leakage??"";
  $("projectCodePreview").textContent="Project ID: "+(p.project_code||"");$("projectCodePreview").dataset.projectCode=p.project_code||"";$("projectCodePreview").classList.remove("hidden");
- if($("materialDispatch").value)syncMaterialDateChain("materialDispatch");
- if(p.material_delivered_date){$("materialDelivered").value=p.material_delivered_date;$("projectEnd").value=p.actual_project_end_date||p.project_end_date||p.material_delivered_date;}
+
  $("adminSubmissionList").classList.add("hidden");
  $("projectForm").classList.remove("hidden");
  $("projectForm").scrollIntoView({behavior:"smooth",block:"start"});
@@ -509,16 +508,16 @@ async function saveClientSubmittedProject(){
  const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value;
  const hasPayment=!!(payType||payAmount||payDate);
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter the payment amount and payment date.");return}
- const dispatchDate=$("materialDispatch").value||null,deliveredDate=$("materialDelivered").value||addCalendarDays(dispatchDate,7);
+ const dispatchDate=$("materialDispatch").value||null,deliveredDate=$("materialDelivered").value||null;
  const changes={
   project_name:name,client_remarks:$("projectRemarks").value.trim()||null,service_details:$("projectServiceDetails").value.trim()||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value),
   project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),
-  billing_done:$("billingDone").value==="true",billing_date:dispatchDate,
+  billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,
   project_type:$("projectType").value,project_start_date:$("projectStart").value,
   expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),
   expected_project_end_date:$("expectedProjectEnd").value,
-  actual_project_end_date:$("projectEnd").value||deliveredDate||null,
-  project_end_date:$("projectEnd").value||deliveredDate||null,
+  actual_project_end_date:$("projectEnd").value||null,
+  project_end_date:$("projectEnd").value||null,
   project_hold:$("projectHold").value==="true",
   wip_delay_reason:$("projectWipReason").value||null,
   billing_delay_reason:$("projectBillingDelayReason").value||null,
