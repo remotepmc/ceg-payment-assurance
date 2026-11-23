@@ -560,7 +560,8 @@ function render(){
  $("finalProjects").innerHTML=finalMarkup;
  $("adminProjectLists").classList.toggle("hidden",!isAdmin());
  $("clientProjectTabs").classList.toggle("hidden",isAdmin());
- $("clientResubmitProjects").innerHTML=pendingMarkup;
+ const clientPendingProjects=projects.filter(p=>p.workflow_stage!=="final");
+ $("clientResubmitProjects").innerHTML=clientPendingProjects.length?clientPendingProjects.map(p=>{const submittedDate=String(p.created_at||"").slice(0,10);return `<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name||"Untitled Project")}</b><p><span class="status yellow">Submitted · Awaiting Admin Approval</span></p><p>Revision: ${Number(p.revision_no||1)} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | Expected End: ${esc(p.expected_project_end_date||"—")}</p>${p.client_remarks?`<p><b>Your Remarks:</b> ${esc(p.client_remarks)}</p>`:""}<p class="muted">This is your submitted project copy. Admin review status will update here.</p></div>`}).join(""):"<p class='muted'>No projects awaiting Admin review.</p>";
  $("clientFinalProjects").innerHTML=finalMarkup;
  $("finalProjectTabBtn").classList.toggle("hidden",finalProjects.length===0);
  if(!finalProjects.length){$("finalProjectTab").classList.add("hidden");$("resubmitProjectTab").classList.remove("hidden");document.querySelectorAll("[data-client-tab]").forEach(b=>b.classList.toggle("active",b.dataset.clientTab==="resubmitProjectTab"));}
