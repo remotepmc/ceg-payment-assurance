@@ -1147,15 +1147,29 @@ $("downloadAdminCsvBtn").onclick=downloadAdminCsv;
 ["recordSearch","filterCompany","filterClient","filterCategory","filterProjectType","filterHold"].forEach(id=>$(id).addEventListener("input",renderRecords));
 $("paymentDate").value=new Date().toISOString().slice(0,10);
 
+function switchAdminWorkspaceTab(target){
+ const workspace=$("adminClientWorkspace");
+ if(!workspace)return;
+ const panel=workspace.querySelector("#"+target);
+ if(!panel)return;
+ workspace.querySelectorAll(".admin-workspace-tabs [data-admin-tab]").forEach(button=>{
+  const active=button.dataset.adminTab===target;
+  button.classList.toggle("active",active);
+  button.setAttribute("aria-selected",active?"true":"false");
+ });
+ workspace.querySelectorAll(":scope > .client-project-tab").forEach(section=>{
+  section.classList.toggle("hidden",section.id!==target);
+ });
+ if(target==="adminSummaryPanel")renderAdminProjectSummary();
+ if(target==="adminReportsPanel")renderAdminReportStats();
+}
+document.querySelectorAll("#adminClientWorkspace .admin-workspace-tabs [data-admin-tab]").forEach(button=>{
+ button.addEventListener("click",event=>{
+  event.preventDefault();
+  switchAdminWorkspaceTab(button.dataset.adminTab);
+ });
+});
 document.addEventListener("click",e=>{
- const adminTab=e.target.closest("[data-admin-tab]");
- if(adminTab){
-  const target=adminTab.dataset.adminTab;
-  document.querySelectorAll("#adminClientWorkspace .admin-workspace-tabs [data-admin-tab]").forEach(button=>button.classList.toggle("active",button===adminTab));
-  document.querySelectorAll("#adminClientWorkspace .admin-workspace-panel,#adminClientWorkspace .client-project-tab").forEach(section=>section.classList.toggle("hidden",section.id!==target));
-  if(target==="adminSummaryPanel")renderAdminProjectSummary();
-   if(target==="adminReportsPanel")renderAdminReportStats();
- }
  const clientTab=e.target.closest("[data-client-tab]");
  if(clientTab){
   const target=clientTab.dataset.clientTab;
