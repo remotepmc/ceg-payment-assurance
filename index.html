@@ -568,7 +568,7 @@ function render(){
   const fullDate=fullCollectionDate(p),d=delayInfo(p);
   const badge=(label,item,reason)=>item.days===null||item.days<1?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
-  const adminActions=isAdmin()&&p.workflow_stage!=="final"?`<p><button data-open-project="${p.id}">Open Full Project</button><button data-revise="${p.id}">Open Add Revision</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:isAdmin()?`<p><button data-open-project="${p.id}">Open Full Project</button></p>`:"";
+  const adminActions=isAdmin()&&p.workflow_stage!=="final"?`<p><button data-revise="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:isAdmin()?`<p><button data-open-project="${p.id}">View Full Details</button></p>`:"";
   const service=t.ceg_service_designed||"Not yet mapped by Admin";
   const legacyService=service==="Previously marked Yes";
   const serviceLabel=legacyService?"Legacy service flag — exact service name not recorded":service;
@@ -843,7 +843,7 @@ document.addEventListener("click",e=>{
  const t=e.target.closest("[data-toggle]");if(t)$(t.dataset.toggle).classList.toggle("hidden");
  const c=e.target.closest("[data-close]");if(c)$(c.dataset.close).classList.add("hidden");
  const v=e.target.closest("[data-verify]");if(v)verify(v.dataset.verify,v.dataset.status);
- const rev=e.target.closest("[data-revise]");if(rev){$("trackingProject").value=rev.dataset.revise;$("trackingProject").dispatchEvent(new Event("change"));$("adminTrackingForm").classList.remove("hidden");}
+ const rev=e.target.closest("[data-revise]");if(rev){$("trackingProject").value=rev.dataset.revise;$("trackingProject").dispatchEvent(new Event("change"));$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
  const openProject=e.target.closest("[data-open-project]");if(openProject)openAdminProject(openProject.dataset.openProject);
  const editProject=e.target.closest("[data-edit-project]");if(editProject){$("trackingProject").value=editProject.dataset.editProject;$("trackingProject").dispatchEvent(new Event("change"));$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
  const fin=e.target.closest("[data-finalize]");if(fin)finalizeProject(fin.dataset.finalize);
