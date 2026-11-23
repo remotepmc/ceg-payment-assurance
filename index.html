@@ -564,7 +564,7 @@ async function saveClientProject(projectId){
  if(!project||project.workflow_stage==="final"){alert("Only projects awaiting Admin review can be edited.");return}
  const val=id=>$(id+"_"+projectId).value;
  const amount=val("ce_billamount")===""?null:Number(val("ce_billamount"));
- const dispatchDate=val("ce_dispatch"),billingDate=dispatchDate,deliveredDate=val("ce_delivered"),actualDate=val("ce_actual")||deliveredDate;
+ const dispatchDate=val("ce_dispatch"),billingDate=dispatchDate,deliveredDate=val("ce_delivered")||addCalendarDays(dispatchDate,7),actualDate=val("ce_actual")||deliveredDate;
  const changes={
   project_name:val("ce_name").trim(),project_type:val("ce_type")||null,
   project_start_date:val("ce_start")||null,
