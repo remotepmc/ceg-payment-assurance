@@ -108,9 +108,9 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 
 <section id="adminClientWorkspace" class="panel hidden">
 <div class="client-tabbar admin-workspace-tabs">
- <button type="button" class="client-tab active" data-admin-tab="adminSubmissionsPanel">Client Submissions</button>
- <button type="button" class="client-tab" data-admin-tab="adminSummaryPanel">18-Column Summary</button>
- <button type="button" class="client-tab" data-admin-tab="adminReportsPanel">Reports</button>
+ <button type="button" class="client-tab active" data-admin-tab="adminSubmissionsPanel" onclick="switchAdminWorkspaceTab('adminSubmissionsPanel')">Client Submissions</button>
+ <button type="button" class="client-tab" data-admin-tab="adminSummaryPanel" onclick="switchAdminWorkspaceTab('adminSummaryPanel')">18-Column Summary</button>
+ <button type="button" class="client-tab" data-admin-tab="adminReportsPanel" onclick="switchAdminWorkspaceTab('adminReportsPanel')">Reports</button>
 </div>
 <section id="adminSubmissionsPanel" class="client-project-tab">
  <h3>Client Submissions</h3>
@@ -1148,31 +1148,42 @@ $("downloadAdminCsvBtn").onclick=downloadAdminCsv;
 $("paymentDate").value=new Date().toISOString().slice(0,10);
 
 function switchAdminWorkspaceTab(target){
- const workspace=$("adminClientWorkspace");
  const allowed=["adminSubmissionsPanel","adminSummaryPanel","adminReportsPanel"];
- if(!workspace||!allowed.includes(target))return;
- const panel=$(target);
- if(!panel||!workspace.contains(panel))return;
- const buttons=workspace.querySelectorAll(".admin-workspace-tabs button[data-admin-tab]");
+ if(!allowed.includes(target))return false;
+ const workspace=$("adminClientWorkspace");
+ if(!workspace)return false;
+ const buttons=workspace.querySelectorAll("button[data-admin-tab]");
  buttons.forEach(button=>{
   const active=button.getAttribute("data-admin-tab")===target;
   button.classList.toggle("active",active);
   button.setAttribute("aria-selected",active?"true":"false");
  });
  allowed.forEach(id=>{
-  const section=$(id);
-  if(section)section.classList.toggle("hidden",id!==target);
+  const panel=$(id);
+  if(panel)panel.classList.toggle("hidden",id!==target);
  });
- if(target==="adminSummaryPanel")renderAdminProjectSummary();
- if(target==="adminReportsPanel")renderAdminReportStats();
+ try{
+  if(target==="adminSummaryPanel")renderAdminProjectSummary();
+  if(target==="adminReportsPanel")renderAdminReportStats();
+ }catch(error){
+  console.error("Admin tab content error:",error);
+  const panel=$(target);
+  if(panel){
+   let note=panel.querySelector(".admin-tab-error");
+   if(!note){note=document.createElement("p");note.className="notice admin-tab-error";panel.prepend(note);}
+   note.textContent="This section opened, but its data could not load. Refresh the page and try again.";
+  }
+ }
+ return true;
 }
-document.querySelectorAll("#adminClientWorkspace .admin-workspace-tabs button[data-admin-tab]").forEach(button=>{
- button.onclick=function(event){
-  event.preventDefault();
-  event.stopPropagation();
-  switchAdminWorkspaceTab(button.getAttribute("data-admin-tab"));
- };
-});
+window.switchAdminWorkspaceTab=switchAdminWorkspaceTab;
+document.querySelector("#adminClientWorkspace .admin-workspace-tabs")?.addEventListener("click",event=>{
+ const button=event.target.closest("button[data-admin-tab]");
+ if(!button)return;
+ event.preventDefault();
+ event.stopPropagation();
+ switchAdminWorkspaceTab(button.getAttribute("data-admin-tab"));
+},true);
 document.addEventListener("click",e=>{
  const clientTab=e.target.closest("[data-client-tab]");
  if(clientTab){
