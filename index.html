@@ -138,7 +138,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <section id="clientProjectSummary" class="panel">
 <h3>My Project Summary</h3><p class="muted">One project per row. Scroll horizontally to view all 18 columns.</p>
 <div class="table-wrap project-summary-scroll"><table id="clientProjectSummaryTable"><thead><tr>
-<th>Client Name</th><th>Project ID</th><th>CEG Date</th><th>Project Name</th><th>Project Type</th><th>Project Start Date</th><th>Expected Project End Date</th><th>Actual Project End Date</th><th>Project Execution / WIP Delay Reason</th><th>Billing Date</th><th>Billing Amount with Tax</th><th>Payment Date</th><th>Payment Amount</th><th>Service Details</th><th>Execution Delay (Days)</th><th>Billing Delay (Days)</th><th>Payment Delay (Days)</th><th>Delete</th>
+<th>Company Name</th><th>Project ID</th><th>CEG Date</th><th>Project Name</th><th>Project Type</th><th>Project Start Date</th><th>Expected Project End Date</th><th>Actual Project End Date</th><th>Project Execution / WIP Delay Reason</th><th>Billing Date</th><th>Billing Amount with Tax</th><th>Payment Date</th><th>Payment Amount</th><th>Service Details</th><th>Execution Delay (Days)</th><th>Billing Delay (Days)</th><th>Payment Delay (Days)</th><th>Delete</th>
 </tr></thead><tbody id="clientProjectSummaryRows"><tr><td colspan="18" class="muted">No projects added yet.</td></tr></tbody></table></div></section>
 <div id="projectForm" class="panel hidden"><h3>Add Project</h3>
 <div class="form-section"><h4>Add Project · 21 Fields</h4>
@@ -625,7 +625,8 @@ function renderClientProjectSummary(){
   const billing=actual?projectAgingDays(actual,p.billing_done&&p.billing_date?p.billing_date:today):null;
   const full=fullCollectionDate(p),target=Number(p.billing_amount_with_tax??p.project_value??0),verified=paid(p.id);
   const payment=p.billing_date&&target>0?(full?projectAgingDays(p.billing_date,full):verified<target?projectAgingDays(p.billing_date,today):0):null;
-  const vals=[c.client_name||"—",p.project_code||"—",displayDate(p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—",p.service_details||"—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
+  const company=companies.find(x=>x.id===c.company_id)||{};
+  const vals=[company.company_name||"—",p.project_code||"—",displayDate(p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—",p.service_details||"—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
   return '<tr>'+vals.map(v=>'<td>'+esc(v)+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>';
  }).join("");
 }
