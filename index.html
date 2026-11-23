@@ -6,6 +6,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CEG Payment Assurance</title>
 <meta name="theme-color" content="#123d75">
+<meta name="description" content="CEG by Confident Closer – construction project visibility and management.">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" href="./icons/ceg-icon.svg">
+<link rel="apple-touch-icon" href="./icons/ceg-icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CEG">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -1320,6 +1326,14 @@ document.addEventListener("click",e=>{
 });
 db.auth.onAuthStateChange((event,session)=>{if(session?.user)setTimeout(start,0)});
 start();
+// Register the CEG app service worker for installability and basic offline shell support.
+if("serviceWorker" in navigator){
+ window.addEventListener("load",()=>{
+  navigator.serviceWorker.register("./service-worker.js").catch(error=>{
+   console.warn("CEG service worker registration failed:",error);
+  });
+ });
+}
 let lastAgingRefreshDate=new Date().toDateString();
 setInterval(()=>{
  const currentDate=new Date().toDateString();
