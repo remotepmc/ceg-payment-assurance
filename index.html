@@ -128,31 +128,18 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <label>Material Delivered Date</label><input id="materialDelivered" type="date">
 <label>Material Collection Date</label><input id="materialCollection" type="date">
 <div id="adminProjectFields">
-<h4>Admin-only tracking</h4>
-<label>Project Delay Days</label><input id="projectDelayDays" type="number" min="0" step="1">
-<label>Project Delay Reason</label><select id="projectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
-<label>Billing Delay Days</label><input id="billingDelayDays" type="number" min="0" step="1">
-<label>Billing Delay Reason</label><select id="billingDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
-<label>Payment Delay Days</label><input id="paymentDelayDays" type="number" min="0" step="1">
-<label>Payment Delay Reason</label><select id="paymentDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
-<label>Material Collection Delay Days</label><input id="materialDelayDays" type="number" min="0" step="1">
-<label>Material Collection Delay Reason</label><select id="materialDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<h4>Admin-only project information</h4>
 <label>CEG Service Designed</label><select id="cegDesigned"><option value="">Select</option><option value="true">Yes</option><option value="false">No</option></select>
 </div>
 <button id="saveProject">Save Project</button>
 <button data-close="projectForm" class="secondary">Cancel</button>
 </div>
 <div id="adminTrackingForm" class="panel hidden">
-<h3>Update Admin-only Tracking</h3>
+<h3>Update Delay Reasons (Admin)</h3>
 <label>Select Project</label><select id="trackingProject"></select>
-<label>Project Delay Days</label><input id="editProjectDelayDays" type="number" min="0" step="1">
-<label>Project Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
-<label>Billing Delay Days</label><input id="editBillingDelayDays" type="number" min="0" step="1">
-<label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
-<label>Payment Delay Days</label><input id="editPaymentDelayDays" type="number" min="0" step="1">
-<label>Payment Delay Reason</label><select id="editPaymentDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
-<label>Material Collection Delay Days</label><input id="editMaterialDelayDays" type="number" min="0" step="1">
-<label>Material Collection Delay Reason</label><select id="editMaterialDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>Execution Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
+<label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
+<label>Payment Delay Reason</label><select id="editPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>CEG Service Designed</label><select id="editCegDesigned"><option value="">Select</option><option value="true">Yes</option><option value="false">No</option></select>
 <button id="saveAdminTracking">Save Admin Tracking</button>
 <button data-close="adminTrackingForm" class="secondary">Cancel</button>
@@ -286,7 +273,7 @@ async function load(){
   db.from("projects").select("id,client_id,project_name,project_value,status,project_type,project_start_date,project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date"),
   db.from("payments").select("id,project_id,amount,payment_date,payment_mode,reference_number,status").order("payment_date",{ascending:false}),
   db.from("companies").select("id,company_name").order("company_name"),
-  profile.role==="admin"?db.from("project_admin_tracking").select("*"):{data:[],error:null}
+  db.from("project_admin_tracking").select("*")
  ]);
  for(const x of [c,p,pa,co,at])if(x.error){alert(x.error.message);return}
  clients=c.data||[];projects=p.data||[];payments=pa.data||[];companies=co.data||[];adminTracking=at.data||[];
@@ -307,13 +294,26 @@ function fullCollectionDate(project){
  let sum=0;for(const item of entries){sum+=Number(item.amount||0);if(sum>=target)return item.payment_date}
  return project.payment_received_full_date||null;
 }
-function delayClass(days,greenAllowed=false){
- if(days===null||days===undefined||days==="")return "neutral";
- const n=Number(days);
- if(greenAllowed&&n<=7)return "green";
- if(n<=7)return "neutral";
- if(n<=15)return "yellow";
- return "red";
+function dateDays(from,to){
+ if(!from||!to)return null;
+ const a=Date.parse(String(from).slice(0,10)+"T00:00:00Z"),b=Date.parse(String(to).slice(0,10)+"T00:00:00Z");
+ return Number.isFinite(a)&&Number.isFinite(b)?Math.max(0,Math.floor((b-a)/86400000)):null;
+}
+function delayInfo(project){
+ const today=new Date().toISOString().slice(0,10);
+ const executionDays=!project.project_end_date&&project.project_start_date?dateDays(project.project_start_date,today):null;
+ const completionBase=project.project_end_date||project.material_delivered_date||null;
+ const billingDays=completionBase?dateDays(completionBase,project.billing_done?(project.billing_date||today):today):null;
+ const billDate=project.billing_date||null,fullDate=fullCollectionDate(project);
+ const paymentTarget=Number(project.billing_amount_with_tax||project.project_value||0);
+ const verified=paid(project.id);
+ const paymentDays=billDate&&paymentTarget>0?dateDays(billDate,verified>=paymentTarget?(fullDate||today):today):null;
+ const status=(days,yellowFrom,redFrom)=>days===null?"neutral":days>=redFrom?"red":days>=yellowFrom?"yellow":"green";
+ return {
+  execution:{days:executionDays,status:status(executionDays,16,31)},
+  billing:{days:billingDays,status:status(billingDays,3,8)},
+  payment:{days:paymentDays,status:status(paymentDays,8,16)}
+ };
 }
 
 function renderAdminClientSidebar(){
@@ -326,8 +326,8 @@ function renderAdminClientSidebar(){
 }
 function renderRecords(){
  const admin=profile.role==="admin";
- const headers=["Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Project End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Material Collection Date","Total Verified","Outstanding"];
- if(admin)headers.push("Project Delay Days","Project Delay Reason","Billing Delay Days","Billing Delay Reason","Payment Delay Days","Payment Delay Reason","Material Collection Delay Days","Material Collection Delay Reason","CEG Service Designed");
+ const headers=["Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Project End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Material Collection Date","Execution Delay Days","Execution Delay Reason","Billing Delay Days","Billing Delay Reason","Payment Delay Days","Payment Delay Reason","Total Verified","Outstanding"];
+ if(admin)headers.push("CEG Service Designed");
  $("recordsHead").innerHTML="<tr>"+headers.map(h=>"<th>"+h+"</th>").join("")+"</tr>";
  const companyById=id=>companies.find(x=>x.id===id)?.company_name||"—";
  const q=$("recordSearch").value.trim().toLowerCase(),fc=$("filterCompany").value,fl=$("filterClient").value,fg=$("filterCategory").value,ft=$("filterProjectType").value,fh=$("filterHold").value;
@@ -339,8 +339,9 @@ function renderRecords(){
  $("recordCount").textContent=rows.length+" records shown";
  $("recordsBody").innerHTML=rows.map(p=>{
   const cl=clients.find(x=>x.id===p.client_id)||{},v=Number(p.billing_amount_with_tax??p.project_value??0),got=paid(p.id),t=adminTracking.find(x=>x.project_id===p.id)||{};
-  const cells=[cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",money(got),money(v-got)];
-  if(admin)cells.push(t.project_delay_days??"—",t.project_delay_reason||"—",t.billing_delay_days??"—",t.billing_delay_reason||"—",t.payment_delay_days??"—",t.payment_delay_reason||"—",t.material_collection_delay_days??"—",t.material_collection_delay_reason||"—",t.ceg_service_designed===true?"Yes":t.ceg_service_designed===false?"No":"—");
+  const d=delayInfo(p);
+  const cells=[cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",d.execution.days??"—",t.project_delay_reason||"—",d.billing.days??"—",t.billing_delay_reason||"—",d.payment.days??"—",t.payment_delay_reason||"—",money(got),money(v-got)];
+  if(admin)cells.push(t.ceg_service_designed===true?"Yes":t.ceg_service_designed===false?"No":"—");
   return "<tr>"+cells.map(x=>"<td>"+esc(x)+"</td>").join("")+"</tr>";
  }).join("")||'<tr><td colspan="'+headers.length+'">No matching records</td></tr>';
 }
@@ -359,27 +360,18 @@ function render(){
  $("collected").textContent=money(collected);
  $("outstanding").textContent=money(total-collected);
  $("count").textContent=projects.length;
- if(profile.role==="admin"){
-  const projectYellow=adminTracking.filter(x=>Number(x.project_delay_days)>7&&Number(x.project_delay_days)<=15).length;
-  const projectRed=adminTracking.filter(x=>Number(x.project_delay_days)>15).length;
-  const billingYellow=adminTracking.filter(x=>Number(x.billing_delay_days)>7&&Number(x.billing_delay_days)<=15).length;
-  const billingRed=adminTracking.filter(x=>Number(x.billing_delay_days)>15).length;
-  const materialYellow=adminTracking.filter(x=>Number(x.material_collection_delay_days)>7&&Number(x.material_collection_delay_days)<=15).length;
-  const materialRed=adminTracking.filter(x=>Number(x.material_collection_delay_days)>15).length;
-  const bar=(label,y,r)=>`<div class="barline"><span>${label}</span><div class="bartrack"><div class="barfill" style="width:${Math.min(100,(y+r)/Math.max(1,projects.length)*100)}%;background:linear-gradient(90deg,#d6a21d 0 50%,#d74646 50% 100%)"></div></div><b>${y+r}</b></div>`;
-  $("delayDashboard").classList.remove("hidden");
-  $("delayDashboard").innerHTML="<b>Delay ageing overview</b>"+bar("Project delay",projectYellow,projectRed)+bar("Billing delay",billingYellow,billingRed)+bar("Material collection",materialYellow,materialRed)+"<p class='muted'>Yellow: 8–15 days · Red: 16+ days. Green is reserved for billing-to-final-payment collection within 7 days.</p>";
- }
+ const delayRows=projects.map(p=>delayInfo(p));
+ const countStatus=(key,status)=>delayRows.filter(d=>d[key].status===status).length;
+ const bar=(label,y,r)=>`<div class="barline"><span>${label}</span><div class="bartrack"><div class="barfill" style="width:${Math.min(100,(y+r)/Math.max(1,projects.length)*100)}%;background:linear-gradient(90deg,#d6a21d 0 50%,#d74646 50% 100%)"></div></div><b>${y+r}</b></div>`;
+ $("delayDashboard").classList.remove("hidden");
+ $("delayDashboard").innerHTML="<b>Delay ageing overview</b>"+bar("Execution delay",countStatus("execution","yellow"),countStatus("execution","red"))+bar("Billing delay",countStatus("billing","yellow"),countStatus("billing","red"))+bar("Payment delay",countStatus("payment","yellow"),countStatus("payment","red"))+"<p class='muted'>Execution: Yellow 16–30 days, Red 31+ days. Billing: Yellow 3–7 days, Red 8+ days. Payment: Yellow 8–15 days, Red 16+ days.</p>";
  $("projects").innerHTML=projects.length?projects.map(p=>{
   const c=clients.find(x=>x.id===p.client_id),v=Number(p.project_value||0),got=paid(p.id);
   const percent=v>0?Math.min(100,got/v*100):0;
   const t=adminTracking.find(x=>x.project_id===p.id)||{};
-  const fullDate=fullCollectionDate(p);
-  const billDays=p.billing_date&&fullDate?Math.max(0,Math.round((new Date(fullDate)-new Date(p.billing_date))/86400000)):null;
-  const billStatus=billDays===null?"neutral":delayClass(billDays,true);
-  const projectStatus=delayClass(t.project_delay_days,false),materialStatus=delayClass(t.material_collection_delay_days,false);
-  const badge=(label,days,cls)=>days===null||days===undefined?"":`<span class="status ${cls}">${label}: ${days} days</span>`;
-  return `<div class="project"><b>${esc(p.project_name)}</b><p>Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | End: ${esc(p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p><p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p>${profile.role==="admin"?badge("Project delay",t.project_delay_days,projectStatus)+badge("Material collection",t.material_collection_delay_days,materialStatus)+badge("Billing to collection",billDays,billStatus):""}<p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p><div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div></div>`;
+  const fullDate=fullCollectionDate(p),d=delayInfo(p);
+  const badge=(label,item,reason)=>item.days===null?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
+  return `<div class="project"><b>${esc(p.project_name)}</b><p>Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | End: ${esc(p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p><p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p><p>${badge("Execution delay",d.execution,t.project_delay_reason)} ${badge("Billing delay",d.billing,t.billing_delay_reason)} ${badge("Payment delay",d.payment,t.payment_delay_reason)}</p><p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p><div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div></div>`;
  }).join(""):"<p class='muted'>No projects available.</p>";
  renderAdminClientSidebar();setupRecordFilters();renderRecords();
  $("clientList").innerHTML=clients.length?clients.map(c=>{const company=companies.find(x=>x.id===c.company_id);return `<div class="project"><b>${esc(c.client_name)}</b><p>Company: ${esc(company?.company_name||"Not linked")} | Category: ${esc(c.client_category||"—")}</p><p>${esc(c.email||"")} ${c.phone?"| "+esc(c.phone):""}</p></div>`}).join(""):"<p class='muted'>No clients registered yet.</p>";
@@ -405,6 +397,11 @@ function render(){
  $("projectClient").value=clients[0]?.id||"";
  $("paymentProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc(p.project_name)+'</option>').join("");
  $("trackingProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc(p.project_name)+'</option>').join("");
+ const currentTracking=adminTracking.find(x=>x.project_id===$("trackingProject").value)||{};
+ $("editProjectDelayReason").value=currentTracking.project_delay_reason||"";
+ $("editBillingDelayReason").value=currentTracking.billing_delay_reason||"";
+ $("editPaymentDelayReason").value=currentTracking.payment_delay_reason||"";
+ $("editCegDesigned").value=currentTracking.ceg_service_designed===true?"true":currentTracking.ceg_service_designed===false?"false":"";
 }
 async function addClient(){
  const name=$("clientName").value.trim(),companyName=$("newCompanyName").value.trim();
@@ -441,20 +438,18 @@ async function addProject(){
  const {data,error}=await db.from("projects").insert(payload).select("id").single();
  if(error){alert(error.message);return}
  if(profile.role==="admin"){
-  const {error:adminError}=await db.from("project_admin_tracking").upsert({project_id:data.id,project_delay_days:$("projectDelayDays").value===""?null:Number($("projectDelayDays").value),project_delay_reason:$("projectDelayReason").value||null,billing_delay_days:$("billingDelayDays").value===""?null:Number($("billingDelayDays").value),billing_delay_reason:$("billingDelayReason").value||null,payment_delay_days:$("paymentDelayDays").value===""?null:Number($("paymentDelayDays").value),payment_delay_reason:$("paymentDelayReason").value||null,material_collection_delay_days:$("materialDelayDays").value===""?null:Number($("materialDelayDays").value),material_collection_delay_reason:$("materialDelayReason").value||null,ceg_service_designed:$("cegDesigned").value===""?null:$("cegDesigned").value==="true",updated_by:user.id});
+  const {error:adminError}=await db.from("project_admin_tracking").upsert({project_id:data.id,ceg_service_designed:$("cegDesigned").value===""?null:$("cegDesigned").value==="true",updated_by:user.id});
   if(adminError){alert("Project saved, but admin tracking failed: "+adminError.message);return}
  }
  alert("Project saved");hideForms();await load();
 }
 async function saveAdminTracking(){
  const projectId=$("trackingProject").value;if(!projectId){alert("Select a project");return}
- const val=id=>$(id).value===""?null:Number($(id).value);
  const {error}=await db.from("project_admin_tracking").upsert({
   project_id:projectId,
-  project_delay_days:val("editProjectDelayDays"),project_delay_reason:$("editProjectDelayReason").value||null,
-  billing_delay_days:val("editBillingDelayDays"),billing_delay_reason:$("editBillingDelayReason").value||null,
-  payment_delay_days:val("editPaymentDelayDays"),payment_delay_reason:$("editPaymentDelayReason").value||null,
-  material_collection_delay_days:val("editMaterialDelayDays"),material_collection_delay_reason:$("editMaterialDelayReason").value||null,
+  project_delay_reason:$("editProjectDelayReason").value||null,
+  billing_delay_reason:$("editBillingDelayReason").value||null,
+  payment_delay_reason:$("editPaymentDelayReason").value||null,
   ceg_service_designed:$("editCegDesigned").value===""?null:$("editCegDesigned").value==="true",updated_by:user.id
  });
  if(error){alert(error.message);return}
@@ -501,6 +496,7 @@ $("verifyWhatsAppOtpBtn").onclick=verifyWhatsAppOtp;
 $("signupBtn").onclick=signup;
 $("logoutBtn").onclick=logout;
 $("saveAdminTracking").onclick=saveAdminTracking;
+$("trackingProject").onchange=()=>{const t=adminTracking.find(x=>x.project_id===$("trackingProject").value)||{};$("editProjectDelayReason").value=t.project_delay_reason||"";$("editBillingDelayReason").value=t.billing_delay_reason||"";$("editPaymentDelayReason").value=t.payment_delay_reason||"";$("editCegDesigned").value=t.ceg_service_designed===true?"true":t.ceg_service_designed===false?"false":"";};
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
 $("savePayment").onclick=addPayment;
