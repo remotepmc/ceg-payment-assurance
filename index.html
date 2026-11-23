@@ -470,8 +470,10 @@ function render(){
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
   const adminActions=isAdmin()&&p.workflow_stage!=="final"?`<p><button data-revise="${p.id}">Open Add Revision</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:"";
   const service=t.ceg_service_designed||"Not yet mapped by Admin";
+  const legacyService=service==="Previously marked Yes";
+  const serviceLabel=legacyService?"Legacy service flag — exact service name not recorded":service;
   const priceMatch=String(service).match(/₹[\d,]+\*?/);
-  const serviceMarkup=`<div class="notice"><b>CEG Service mapped by Admin:</b> ${esc(service)}<br><b>Mapped price:</b> ${priceMatch?esc(priceMatch[0]):"Not recorded — Admin confirmation required"}</div>`;
+  const serviceMarkup=`<div class="notice"><b>CEG Service mapped by Admin:</b> ${esc(serviceLabel)}<br><b>Mapped price:</b> ${priceMatch?esc(priceMatch[0]):"Not recorded — Admin must confirm the exact service and price"}</div>`;
   const clientEdit=p.workflow_stage!=="final"?`<details class="panel"><summary>Edit Project & Resubmit to Admin</summary><p class="muted">You can update your project details while it is awaiting Admin review. Your changes are saved as a new revision.</p>
   <label>Project Name</label><input id="ce_name_${p.id}" value="${esc(p.project_name||"")}">
   <label>Project Type</label><select id="ce_type_${p.id}"><option value="">Select project type</option>${["Civil","Interior Furniture","Materials Supply","Design Drawing","Skill Training"].map(x=>`<option ${p.project_type===x?"selected":""}>${x}</option>`).join("")}</select>
