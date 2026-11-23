@@ -129,14 +129,14 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Project Type</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
 <label>Project Start Date *</label><input id="projectStart" type="date" required>
 <label>Expected Project End Date *</label><select id="expectedProjectEnd" required><option value="">Select start date first</option></select>
-<label>Actual Project End Date</label><input id="projectEnd" type="date">
+<label>Actual Project End Date</label><input id="projectEnd" type="date" data-date-role="actual">
 <label>Project Hold</label><select id="projectHold"><option value="false">No</option><option value="true">Yes</option></select>
 
 <label>Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
-<label>Billing Date</label><input id="billingDate" type="date">
+<label>Billing Date</label><input id="billingDate" type="date" data-date-role="billing">
 <label>Billing Amount with Tax (INR, whole rupees)</label><input id="billingAmount" type="number" min="0" step="1">
-<label>Material Dispatch Date</label><input id="materialDispatch" type="date">
-<label>Material Delivered Date</label><input id="materialDelivered" type="date">
+<label>Material Dispatch Date</label><input id="materialDispatch" type="date" data-date-role="dispatch">
+<label>Material Delivered Date</label><input id="materialDelivered" type="date" data-date-role="delivered">
 
 <button id="saveProject">Save Project</button>
 <button data-close="projectForm" class="secondary">Cancel</button>
@@ -148,14 +148,14 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 <label>Project Type</label><select id="revProjectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
 <label>Project Start Date *</label><input id="revProjectStart" type="date" required>
 <label>Expected Project End Date *</label><select id="revExpectedProjectEnd" required><option value="">Select start date first</option></select>
-<label>Actual Project End Date</label><input id="revProjectEnd" type="date">
+<label>Actual Project End Date</label><input id="revProjectEnd" type="date" data-date-role="actual">
 <label>Project Hold</label><select id="revProjectHold"><option value="false">No</option><option value="true">Yes</option></select>
 <label>Project Execution / WIP Delay Reason</label><select id="revWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Billing Done</label><select id="revBillingDone"><option value="false">No</option><option value="true">Yes</option></select>
-<label>Billing Date</label><input id="revBillingDate" type="date">
+<label>Billing Date</label><input id="revBillingDate" type="date" data-date-role="billing">
 <label>Billing Amount with Tax (INR)</label><input id="revBillingAmount" type="number" min="0" step="1">
-<label>Material Dispatch Date</label><input id="revMaterialDispatch" type="date">
-<label>Material Delivered Date</label><input id="revMaterialDelivered" type="date">
+<label>Material Dispatch Date</label><input id="revMaterialDispatch" type="date" data-date-role="dispatch">
+<label>Material Delivered Date</label><input id="revMaterialDelivered" type="date" data-date-role="delivered">
 
 <label>Execution / WIP Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
@@ -347,6 +347,22 @@ function durationBetween(start,end){if(!start||!end)return 0;return Math.round((
 function expectedDateOptions(start,selected=""){if(!start)return '<option value="">Select start date first</option>';return '<option value="">Select expected end date</option>'+EXPECTED_OFFSETS.map(days=>{const date=addDaysISO(start,days);return '<option value="'+date+'" '+(selected===date?'selected':'')+'>'+date+' (+'+days+' days)</option>'}).join("")}
 function refreshExpectedDate(startId,endId,selected=""){const end=$(endId);if(!end)return;const keep=selected||end.value;end.innerHTML=expectedDateOptions($(startId).value,keep);if(keep&&![...end.options].some(o=>o.value===keep))end.value="";}
 function calculateExpectedEnd(startId,endId){refreshExpectedDate(startId,endId);}
+function addCalendarDays(iso,days){
+ if(!iso)return "";
+ const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+days);
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function syncMaterialDateChain(role,suffix=""){
+ const get=id=>$(id+suffix),dispatch=get("materialDispatch")||get("revMaterialDispatch")||get("ce_dispatch"),
+       billing=get("billingDate")||get("revBillingDate")||get("ce_billdate"),
+       delivered=get("materialDelivered")||get("revMaterialDelivered")||get("ce_delivered"),
+       actual=get("projectEnd")||get("revProjectEnd")||get("ce_actual");
+ if(!dispatch||!billing||!delivered||!actual)return;
+ if(role==="dispatch"){billing.value=dispatch.value;delivered.value=addCalendarDays(dispatch.value,7);actual.value=delivered.value;}
+ else if(role==="billing"){dispatch.value=billing.value;delivered.value=addCalendarDays(billing.value,7);actual.value=delivered.value;}
+ else if(role==="delivered"){actual.value=delivered.value;}
+}
+
 function delayInfo(project){
  const today=new Date().toISOString().slice(0,10);
  const actualEnd=project.actual_project_end_date||project.project_end_date||null;
@@ -489,13 +505,13 @@ function render(){
   <label>Project Type</label><select id="ce_type_${p.id}"><option value="">Select project type</option>${["Civil","Interior Furniture","Materials Supply","Design Drawing","Skill Training"].map(x=>`<option ${p.project_type===x?"selected":""}>${x}</option>`).join("")}</select>
   <label>Project Start Date</label><input id="ce_start_${p.id}" type="date" value="${esc(p.project_start_date||"")}" data-start-for="ce_expected_${p.id}">
   <label>Expected Project End Date</label><select id="ce_expected_${p.id}" data-expected-end>${expectedDateOptions(p.project_start_date,p.expected_project_end_date)}</select>
-  <label>Actual Project End Date</label><input id="ce_actual_${p.id}" type="date" value="${esc(p.actual_project_end_date||p.project_end_date||"")}">
+  <label>Actual Project End Date</label><input id="ce_actual_${p.id}" type="date" value="${esc(p.actual_project_end_date||p.project_end_date||"")}" data-date-role="actual" data-date-suffix="_${p.id}">
   <label>Project Hold</label><select id="ce_hold_${p.id}"><option value="false" ${!p.project_hold?"selected":""}>No</option><option value="true" ${p.project_hold?"selected":""}>Yes</option></select>
   <label>Billing Done</label><select id="ce_billed_${p.id}"><option value="false" ${!p.billing_done?"selected":""}>No</option><option value="true" ${p.billing_done?"selected":""}>Yes</option></select>
-  <label>Billing Date</label><input id="ce_billdate_${p.id}" type="date" value="${esc(p.billing_date||"")}">
+  <label>Billing Date</label><input id="ce_billdate_${p.id}" type="date" value="${esc(p.billing_date||"")}" data-date-role="billing" data-date-suffix="_${p.id}">
   <label>Billing Amount with Tax (₹)</label><input id="ce_billamount_${p.id}" type="number" min="0" step="1" value="${esc(p.billing_amount_with_tax??p.project_value??"")}">
-  <label>Material Dispatch Date</label><input id="ce_dispatch_${p.id}" type="date" value="${esc(p.material_dispatch_date||"")}">
-  <label>Material Delivered Date</label><input id="ce_delivered_${p.id}" type="date" value="${esc(p.material_delivered_date||"")}">
+  <label>Material Dispatch Date</label><input id="ce_dispatch_${p.id}" type="date" value="${esc(p.material_dispatch_date||"")}" data-date-role="dispatch" data-date-suffix="_${p.id}">
+  <label>Material Delivered Date</label><input id="ce_delivered_${p.id}" type="date" value="${esc(p.material_delivered_date||"")}" data-date-role="delivered" data-date-suffix="_${p.id}">
 
   <button data-client-save="${p.id}">Save Changes & Send for Admin Review</button></details>`:"";
   const approvalLink=`https://wa.me/917894531187?text=${encodeURIComponent("Please review and approve my project "+(p.project_code||"")+" — "+(p.project_name||"")+". Current revision: "+(p.revision_no||1)+". I have checked the details in the Client Portal.")}`;
@@ -545,14 +561,15 @@ async function saveClientProject(projectId){
  if(!project||project.workflow_stage==="final"){alert("Only projects awaiting Admin review can be edited.");return}
  const val=id=>$(id+"_"+projectId).value;
  const amount=val("ce_billamount")===""?null:Number(val("ce_billamount"));
+ const dispatchDate=val("ce_dispatch"),billingDate=dispatchDate,deliveredDate=val("ce_delivered"),actualDate=val("ce_actual")||deliveredDate;
  const changes={
   project_name:val("ce_name").trim(),project_type:val("ce_type")||null,
   project_start_date:val("ce_start")||null,
   expected_duration_days:durationBetween(val("ce_start"),val("ce_expected")),
   expected_project_end_date:val("ce_expected")||null,
-  actual_project_end_date:val("ce_actual")||null,project_end_date:val("ce_actual")||null,
+  actual_project_end_date:actualDate||null,project_end_date:actualDate||null,
   project_hold:val("ce_hold")==="true",billing_done:val("ce_billed")==="true",
-  billing_date:val("ce_billdate")||null,billing_amount_with_tax:amount,
+  billing_date:billingDate||null,billing_amount_with_tax:amount,
   project_value:amount??0,material_dispatch_date:val("ce_dispatch")||null,
   material_delivered_date:val("ce_delivered")||null,
  };
@@ -604,7 +621,7 @@ async function addProject(){
  
  const clientId=$("projectClient").value;
  if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project End Date are mandatory.");return}
- const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ const dispatchDate=$("materialDispatch").value||null, deliveredDate=$("materialDelivered").value||addCalendarDays(dispatchDate,7);\n const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:dispatchDate,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||deliveredDate||null,project_end_date:$("projectEnd").value||deliveredDate||null,project_hold:$("projectHold").value==="true",material_dispatch_date:dispatchDate,material_delivered_date:deliveredDate,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("*").single();
  if(error){alert(error.message);return}
  const {error:historyError}=await db.from("project_revisions").insert({project_id:data.id,revision_no:1,revision_type:"submission",revision_data:data,revision_note:"Initial project submitted for Admin review",created_by:user.id});
@@ -628,11 +645,11 @@ async function saveAdminTracking(){
   project_hold:$("revProjectHold").value==="true",
   wip_delay_reason:$("revWipReason").value||null,
   billing_done:$("revBillingDone").value==="true",
-  billing_date:$("revBillingDate").value||null,
+  billing_date:$("revMaterialDispatch").value||null,
   billing_amount_with_tax:$("revBillingAmount").value===""?null:Number($("revBillingAmount").value),
   project_value:$("revBillingAmount").value===""?0:Number($("revBillingAmount").value),
   material_dispatch_date:$("revMaterialDispatch").value||null,
-  material_delivered_date:$("revMaterialDelivered").value||null,
+  material_delivered_date:$("revMaterialDelivered").value||addCalendarDays($("revMaterialDispatch").value,7)||null,
  };
  if(!projectChanges.project_name||!projectChanges.project_type||!projectChanges.project_start_date||projectChanges.expected_duration_days<=0||!projectChanges.expected_project_end_date){alert("Project Name, Project Type, Start Date and Expected Project End Date are mandatory.");return}
  const {error:projectEditError}=await db.from("projects").update(projectChanges).eq("id",projectId);
@@ -746,7 +763,8 @@ $("trackingProject").onchange=()=>{
 };
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
- $("projectStart").addEventListener("change",()=>calculateExpectedEnd("projectStart","expectedProjectEnd"));
+ document.addEventListener("change",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.dataset.dateRole,suffix);});
+  $("projectStart").addEventListener("change",()=>calculateExpectedEnd("projectStart","expectedProjectEnd"));
  $("revProjectStart").addEventListener("change",()=>calculateExpectedEnd("revProjectStart","revExpectedProjectEnd"));
  document.addEventListener("change",e=>{const start=e.target.closest("[data-start-for]");if(start){const endId=start.dataset.startFor;refreshExpectedDate(start.id,endId);}});
 $("savePayment").onclick=addPayment;
