@@ -560,7 +560,7 @@ function render(){
  $("paymentForm").classList.toggle("hidden",!admin);
  $("paymentForm").querySelector("h3").textContent="Record Payment";
  $("adminClientListSection").classList.toggle("hidden",!admin);
- $("projectClientAdminOnly").classList.remove("hidden");
+ $("projectClientAdminOnly").classList.toggle("hidden",!admin);
  $("addProjectBtn").disabled=clients.length===0;
  $("addProjectBtn").textContent=clients.length?"+ Add Project":"+ Add Project (locked)";
  $("projectLockNote").classList.toggle("hidden",clients.length>0);
