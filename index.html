@@ -461,7 +461,7 @@ function render(){
   }).join("");
   $("clientActionDashboard").innerHTML=`<div class="cta-heading"><div><h3>My Call To Action</h3><p>Only your projects · Ageing, reason and service mapped by Admin</p></div></div><div class="cta-grid">${ctaHtml}</div><p class="muted">Money leakage and amount-blocked calculations are not shown in the Client Portal.</p>`;
  }
- $("delayDashboard").innerHTML=`<div class="cta-heading"><div><h3>Call To Action For Clients</h3><p>Open delays grouped by stage and urgency · Based on project and payment dates</p></div><span class="status neutral">6 individual categories</span></div><div class="cta-grid">${cards}</div><p class="muted">Execution: Expected End Date → today while work is in progress. Billing: Actual Project End Date → Billing Date. Payment: Billing Date → full verified payment date. Cleared stages are removed from the action list.</p>${summarySection}`;
+ $("delayDashboard").innerHTML=isAdmin()?`<div class="cta-heading"><div><h3>Call To Action For Clients</h3><p>Open delays grouped by stage and urgency · Based on project and payment dates</p></div><span class="status neutral">6 individual categories</span></div><div class="cta-grid">${cards}</div><p class="muted">Execution: Expected End Date → today while work is in progress. Billing: Actual Project End Date → Billing Date. Payment: Billing Date → full verified payment date. Cleared stages are removed from the action list.</p>${summarySection}`:"";
  const renderProjectCard=p=>{
   const c=clients.find(x=>x.id===p.client_id),v=Number(p.project_value||0),got=paid(p.id);
   const percent=v>0?Math.min(100,got/v*100):0,t=adminTracking.find(x=>x.project_id===p.id)||{};
@@ -514,9 +514,10 @@ function render(){
  $("addEntryBtn").classList.remove("hidden");
  $("adminTrackingBtn").classList.toggle("hidden",!admin);
   $("exportBtn").classList.toggle("hidden",!admin);
- $("recordPaymentBtn").classList.toggle("hidden",!admin&&projects.length===0);
- $("recordPaymentBtn").textContent=admin?"+ Record Payment":"+ Submit Payment";
- $("paymentForm").querySelector("h3").textContent=admin?"Record Payment":"Submit Payment Details";
+ $("recordPaymentBtn").classList.toggle("hidden",!admin);
+ $("recordPaymentBtn").textContent="+ Record Payment";
+ $("paymentForm").classList.toggle("hidden",!admin);
+ $("paymentForm").querySelector("h3").textContent="Record Payment";
  $("adminClientListSection").classList.toggle("hidden",!admin);
  $("projectClientAdminOnly").classList.remove("hidden");
  $("addProjectBtn").disabled=clients.length===0;
