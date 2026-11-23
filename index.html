@@ -425,9 +425,12 @@ function render(){
  const totalValue=approvedProjects.reduce((sum,p)=>sum+Number(p.billing_amount_with_tax??p.project_value??0),0);
  const verifiedCollection=approvedProjects.reduce((sum,p)=>sum+paid(p.id),0);
  const outstandingValue=Math.max(0,totalValue-verifiedCollection);
+ const todayLocal=new Date();todayLocal.setHours(0,0,0,0);
  const maxAging=approvedProjects.reduce((max,p)=>{
-  const d=delayInfo(p);
-  return Math.max(max,Number(d.execution.days||0),Number(d.billing.days||0),Number(d.payment.days||0));
+  const actual=p.actual_project_end_date||p.project_end_date||p.material_delivered_date;
+  if(!actual)return max;
+  const start=new Date(actual+"T00:00:00");
+  return Math.max(max,Math.max(0,Math.floor((todayLocal-start)/86400000)));
  },0);
  const mappedServices=[...new Set(approvedProjects.map(p=>(adminTracking.find(t=>t.project_id===p.id)||{}).ceg_service_designed).filter(v=>v&&v.trim()))];
  $("summaryContent").innerHTML=
@@ -621,7 +624,8 @@ async function addProject(){
  
  const clientId=$("projectClient").value;
  if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project End Date are mandatory.");return}
- const dispatchDate=$("materialDispatch").value||null, deliveredDate=$("materialDelivered").value||addCalendarDays(dispatchDate,7);\n const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:dispatchDate,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||deliveredDate||null,project_end_date:$("projectEnd").value||deliveredDate||null,project_hold:$("projectHold").value==="true",material_dispatch_date:dispatchDate,material_delivered_date:deliveredDate,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ const dispatchDate=$("materialDispatch").value||null, deliveredDate=$("materialDelivered").value||addCalendarDays(dispatchDate,7);
+ const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:dispatchDate,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||deliveredDate||null,project_end_date:$("projectEnd").value||deliveredDate||null,project_hold:$("projectHold").value==="true",material_dispatch_date:dispatchDate,material_delivered_date:deliveredDate,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("*").single();
  if(error){alert(error.message);return}
  const {error:historyError}=await db.from("project_revisions").insert({project_id:data.id,revision_no:1,revision_type:"submission",revision_data:data,revision_note:"Initial project submitted for Admin review",created_by:user.id});
@@ -786,6 +790,14 @@ document.addEventListener("click",e=>{
 });
 db.auth.onAuthStateChange((event,session)=>{if(session?.user)setTimeout(start,0)});
 start();
+let lastAgingRefreshDate=new Date().toDateString();
+setInterval(()=>{
+ const currentDate=new Date().toDateString();
+ if(currentDate!==lastAgingRefreshDate){
+  lastAgingRefreshDate=currentDate;
+  if(!$("app").classList.contains("hidden"))render();
+ }
+},60000);
 </script>
 </body>
   </html>
