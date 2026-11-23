@@ -384,7 +384,7 @@ async function load(){
   db.from("project_admin_tracking").select("*"),
   db.from("project_revisions").select("id,project_id,revision_no,revision_type,revision_note,created_at,created_by").order("revision_no",{ascending:true})
  ]);
- for(const x of [c,p,pa,co,at,pr])if(x.error){alert(x.error.message);return}
+ for(const x of [c,p,pa,co,at,pr])if(x.error){alert(x.error.message);return false}
  clients=c.data||[];projects=(p.data||[]).filter(x=>!x.deleted_at);payments=pa.data||[];companies=co.data||[];adminTracking=at.data||[];projectRevisions=pr.data||[];
  if(!isAdmin()){
   const ids=clients.filter(x=>x.user_id===user.id).map(x=>x.id);
@@ -395,6 +395,7 @@ async function load(){
  }
  render();
  if(isAdmin()){renderAdminClientSubmissions();renderAdminReportStats();}
+ return true;
 }
 function paid(id){return payments.filter(p=>p.project_id===id&&p.status==="verified").reduce((s,p)=>s+Number(p.amount),0)}
 function fullCollectionDate(project){
@@ -1019,8 +1020,9 @@ function buildAdminReportData(){
  return {finals,today,summary:[summaryHeaders,...finals.map(p=>reportSummaryRow(p,today))],master:reportMasterRows(finals),analysis:[["Company Name","Project ID","Project Name","Execution Delay (Days)","Billing Delay (Days)","Payment Delay (Days)","Project Value","Verified Collection","Outstanding","Money Leakage"],...reportAnalysisRows(finals)],cta:[["Company Name","Project ID","Project Name","CTA Category","Delay Days","Priority","Recommended Admin Action"],...reportCTArows(finals)],companies:[["Company Name","Final Projects","Project Value","Verified Collection","Outstanding","Money Leakage"],...reportCompanyRows(finals)]};
 }
 function setSheetWidths(sheet,widths){sheet["!cols"]=widths.map(w=>({wch:w}));}
-function downloadAdminExcel(){
+async function downloadAdminExcel(){
  if(!isAdmin()){alert("Only Admin can download final project reports.");return}
+ const refreshed=await load();if(refreshed===false)return;
  if(!window.XLSX){alert("Excel library did not load. Refresh the portal and try again.");return}
  const data=buildAdminReportData(),wb=XLSX.utils.book_new();
  const add=(name,rows,widths)=>{const ws=XLSX.utils.aoa_to_sheet(rows);setSheetWidths(ws,widths);XLSX.utils.book_append_sheet(wb,ws,name);};
@@ -1033,8 +1035,9 @@ function downloadAdminExcel(){
  XLSX.writeFile(wb,"CEG-Final-Project-Report-"+data.today+".xlsx");
  $("adminReportMessage").textContent="Generated "+data.finals.length+" Final Project(s) from the latest saved records on "+data.today+".";
 }
-function downloadAdminCsv(){
+async function downloadAdminCsv(){
  if(!isAdmin()){alert("Only Admin can download final project reports.");return}
+ const refreshed=await load();if(refreshed===false)return;
  const data=buildAdminReportData(),rows=data.summary;
  const csv=rows.map(r=>r.map(x=>'"'+String(x??"").replace(/"/g,'""')+'"').join(",")).join("\n");
  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
