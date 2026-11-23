@@ -1,186 +1,257 @@
 
--- CEG PAYMENT ASSURANCE | BUILD 02
--- Database foundation and access security
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CEG Payment Assurance</title>
+<meta name="theme-color" content="#123d75">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f6fb;color:#182b45;font-family:Arial,sans-serif}
+header{background:#123d75;color:white;padding:22px}
+header h2{margin:0}
+header p{font-size:13px;color:#d5e3f5;margin:7px 0 0}
+main{max-width:900px;margin:auto;padding:16px}
+.panel,.card,.project{background:white;padding:16px;border-radius:12px;margin:12px 0;box-shadow:0 2px 8px #0001}
+h3{font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card small{color:#718096}
+.amount{font-size:22px;font-weight:bold;color:#123d75;margin-top:8px}
+label{display:block;font-size:12px;font-weight:bold;margin-top:10px}
+input,select{width:100%;padding:13px;margin:6px 0;border:1px solid #d5dfeb;border-radius:8px;font-size:14px}
+button{padding:12px 15px;border:0;border-radius:8px;background:#1765bd;color:white;font-weight:bold;margin:4px}
+.secondary{background:#e6effb;color:#174c88}
+.danger{background:#fff0ef;color:#bd3939}
+.hidden{display:none!important}
+.muted{font-size:12px;color:#78889a}
+.row,.actions{display:flex;justify-content:space-between;align-items:center;gap:7px;flex-wrap:wrap}
+.badge{display:inline-block;background:#e4f5ec;color:#187449;padding:5px 9px;border-radius:20px;font-size:11px}
+.notice{background:#fff8e8;padding:12px;border-radius:8px;font-size:12px;color:#795b19}
+.project p{font-size:12px;color:#66768a}
+footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
+@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header>
+<h2>CEG Payment Assurance</h2>
+<p>Business Payment Collection Management</p>
+<p>Powered by Confident Closer</p>
+</header>
+<main>
+<section id="auth" class="panel">
+<h3>Login / Create Account</h3>
+<label>Email</label><input id="email" type="email" placeholder="Your email">
+<label>Password</label><input id="password" type="password" placeholder="Password">
+<label>Full Name (new account)</label><input id="fullName" placeholder="Your full name">
+<button id="loginBtn">Login</button>
+<button id="signupBtn" class="secondary">Create Account</button>
+<p id="message" class="muted"></p>
+<p class="notice">New accounts receive client access. Staff access must be assigned by the administrator.</p>
+</section>
 
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  full_name text,
-  role text not null default 'client'
-    check (role in ('admin','staff','client')),
-  created_at timestamptz default now()
-);
+<section id="app" class="hidden">
+<div class="row"><h3 id="welcome">Dashboard</h3><button id="logoutBtn" class="secondary">Logout</button></div>
+<p id="roleText" class="muted"></p>
+<div class="grid">
+<div class="card"><small>Total Project Value</small><div class="amount" id="total">₹0</div></div>
+<div class="card"><small>Verified Collection</small><div class="amount" id="collected">₹0</div></div>
+<div class="card"><small>Outstanding</small><div class="amount" id="outstanding">₹0</div></div>
+<div class="card"><small>Projects</small><div class="amount" id="count">0</div></div>
+</div>
 
--- Automatically create a client profile when a user signs up
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  insert into public.profiles (id, full_name, role)
-  values (
-    new.id,
-    new.raw_user_meta_data ->> 'full_name',
-    'client'
-  )
-  on conflict (id) do nothing;
-  return new;
-end;
-$$;
+<section id="staff" class="hidden">
+<div class="actions">
+<button data-toggle="clientForm">+ Add Client</button>
+<button data-toggle="projectForm">+ Add Project</button>
+<button data-toggle="paymentForm">+ Record Payment</button>
+<button id="exportBtn" class="secondary">Export Report</button>
+<button id="refreshBtn" class="secondary">Refresh</button>
+</div>
+<div id="clientForm" class="panel hidden">
+<h3>Register Client</h3>
+<label>Client Name</label><input id="clientName">
+<label>Email</label><input id="clientEmail" type="email">
+<label>Phone</label><input id="clientPhone">
+<button id="saveClient">Save Client</button>
+<button data-close="clientForm" class="secondary">Cancel</button>
+</div>
+<div id="projectForm" class="panel hidden">
+<h3>Register Project</h3>
+<label>Select Client</label><select id="projectClient"></select>
+<label>Project Name</label><input id="projectName">
+<label>Agreed Project Value (₹)</label><input id="projectValue" type="number" min="1" step="0.01">
+<button id="saveProject">Save Project</button>
+<button data-close="projectForm" class="secondary">Cancel</button>
+</div>
+<div id="paymentForm" class="panel hidden">
+<h3>Record Payment</h3>
+<label>Select Project</label><select id="paymentProject"></select>
+<label>Amount (₹)</label><input id="paymentAmount" type="number" min="0.01" step="0.01">
+<label>Payment Date</label><input id="paymentDate" type="date">
+<label>Payment Method</label>
+<select id="paymentMethod">
+<option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Cheque</option><option>Other</option>
+</select>
+<label>Transaction Reference</label><input id="reference" placeholder="UTR / receipt number">
+<button id="savePayment">Save as Pending Verification</button>
+<button data-close="paymentForm" class="secondary">Cancel</button>
+</div>
+</section>
 
-drop trigger if exists on_auth_user_created on auth.users;
+<h3>Projects</h3><div id="projects"></div>
+<h3>Payment History</h3><div id="history"></div>
+<p id="clientHelp" class="notice hidden">Your account is not yet linked to a client record. Contact your CEG administrator.</p>
+<p class="notice">A payment entry is not proof of bank settlement. Verify each transaction independently before marking it verified.</p>
+</section>
+</main>
+<footer>CEG Payment Assurance | Confident Closer</footer>
 
-create trigger on_auth_user_created
-after insert on auth.users
-for each row execute procedure public.handle_new_user();
+<script>
+const SUPABASE_URL="https://wcsnpazppvuwyzohxxpx.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indj c25wYXpwcHZ1d3l6b2h4eHB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzOTc2MDgsImV4cCI6MjExMDk3MzYwOH0.kuS5I3OsPdkX9QsjznWVzaXnAiSZdmau8NmXN4tUpdI".replace(" ","");
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+let user=null,profile=null,clients=[],projects=[],payments=[];
+const staffRoles=["super_admin","accounts","project_manager","collection_executive"];
+const isStaff=()=>staffRoles.includes(profile?.role);
+const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function hideForms(){["clientForm","projectForm","paymentForm"].forEach(id=>$(id).classList.add("hidden"))}
 
--- Check whether the logged-in user is an admin or staff
-create or replace function public.is_staff()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.profiles
-    where id = auth.uid()
-      and role in ('admin','staff')
-  );
-$$;
+async function login(){
+ $("message").textContent="Signing in...";
+ const {error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+ if(error)$("message").textContent=error.message;
+}
+async function signup(){
+ const email=$("email").value.trim(),password=$("password").value;
+ if(!email||password.length<6){$("message").textContent="Enter email and a password of at least 6 characters.";return}
+ const {data,error}=await db.auth.signUp({email,password,options:{data:{full_name:$("fullName").value.trim()}}});
+ $("message").textContent=error?error.message:(data.session?"Account created.":"Account created. Check your email for confirmation, then log in.");
+}
+async function logout(){await db.auth.signOut();location.reload()}
 
--- Client master records
-create table if not exists public.clients (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid unique references public.profiles(id),
-  client_name text not null,
-  phone text,
-  email text,
-  created_by uuid references public.profiles(id),
-  created_at timestamptz default now()
-);
+async function start(){
+ const {data:{user:u}}=await db.auth.getUser();
+ if(!u)return;
+ user=u;
+ const {data,error}=await db.from("profiles").select("id,full_name,role").eq("id",u.id).single();
+ if(error){$("message").textContent="Profile error: "+error.message;return}
+ profile=data;
+ $("auth").classList.add("hidden");
+ $("app").classList.remove("hidden");
+ $("welcome").textContent="Welcome, "+(profile.full_name||user.email);
+ $("roleText").textContent="Account role: "+profile.role.replaceAll("_"," ");
+ $("staff").classList.toggle("hidden",!isStaff());
+ await load();
+}
 
--- Project records
-create table if not exists public.projects (
-  id uuid primary key default gen_random_uuid(),
-  client_id uuid not null references public.clients(id),
-  project_code text unique,
-  project_name text not null,
-  project_value numeric(14,2) default 0
-    check (project_value >= 0),
-  status text default 'active'
-    check (status in ('active','completed','on_hold','cancelled')),
-  created_by uuid references public.profiles(id),
-  created_at timestamptz default now()
-);
+async function load(){
+ const [c,p,pa]=await Promise.all([
+  db.from("clients").select("id,client_name,email,phone,user_id"),
+  db.from("projects").select("id,client_id,project_name,project_value,status"),
+  db.from("payments").select("id,project_id,amount,payment_date,payment_method,reference_number,status").order("payment_date",{ascending:false})
+ ]);
+ for(const x of [c,p,pa])if(x.error){alert(x.error.message);return}
+ clients=c.data||[];projects=p.data||[];payments=pa.data||[];
+ if(!isStaff()){
+  const ids=clients.filter(x=>x.user_id===user.id).map(x=>x.id);
+  projects=projects.filter(x=>ids.includes(x.client_id));
+  payments=payments.filter(x=>projects.some(p=>p.id===x.project_id));
+  clients=clients.filter(x=>x.user_id===user.id);
+  $("clientHelp").classList.toggle("hidden",projects.length>0);
+ }
+ render();
+}
+function paid(id){return payments.filter(p=>p.project_id===id&&p.status==="verified").reduce((s,p)=>s+Number(p.amount),0)}
+function render(){
+ const total=projects.reduce((s,p)=>s+Number(p.project_value||0),0);
+ const collected=projects.reduce((s,p)=>s+paid(p.id),0);
+ $("total").textContent=money(total);
+ $("collected").textContent=money(collected);
+ $("outstanding").textContent=money(total-collected);
+ $("count").textContent=projects.length;
+ $("projects").innerHTML=projects.length?projects.map(p=>{
+  const c=clients.find(x=>x.id===p.client_id),v=Number(p.project_value||0),got=paid(p.id);
+  const percent=v>0?Math.min(100,got/v*100):0;
+  return `<div class="project"><b>${esc(p.project_name)}</b><p>Client: ${esc(c?.client_name||"Client")}</p><p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p><div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div></div>`;
+ }).join(""):"<p class='muted'>No projects available.</p>";
+ $("history").innerHTML=payments.length?payments.map(p=>{
+  const project=projects.find(x=>x.id===p.project_id);
+  const buttons=isStaff()&&p.status==="pending_verification"?`<p><button data-verify="${p.id}" data-status="verified">Verify</button><button class="danger" data-verify="${p.id}" data-status="rejected">Reject</button></p>`:"";
+  return `<div class="project"><b>${money(p.amount)}</b><p>${esc(project?.project_name||"Project")} | ${esc(p.payment_date||"")}</p><p>${esc(p.payment_method||"")} | Ref: ${esc(p.reference_number||"Not provided")}</p><span class="badge">${esc(p.status)}</span>${buttons}</div>`;
+ }).join(""):"<p class='muted'>No payment records yet.</p>";
+ if(isStaff()){
+  $("projectClient").innerHTML=clients.map(c=>`<option value="${c.id}">${esc(c.client_name)}</option>`).join("");
+  $("paymentProject").innerHTML=projects.map(p=>`<option value="${p.id}">${esc(p.project_name)}</option>`).join("");
+ }
+}
+async function addClient(){
+ const name=$("clientName").value.trim();
+ if(!name){alert("Enter client name");return}
+ const {error}=await db.from("clients").insert({client_name:name,email:$("clientEmail").value.trim()||null,phone:$("clientPhone").value.trim()||null});
+ if(error){alert(error.message);return}
+ alert("Client saved");hideForms();await load();
+}
+async function addProject(){
+ const value=Number($("projectValue").value),name=$("projectName").value.trim();
+ if(!$("projectClient").value||!name||value<=0){alert("Enter all project details");return}
+ const {error}=await db.from("projects").insert({client_id:$("projectClient").value,project_name:name,project_value:value,status:"active"});
+ if(error){alert(error.message);return}
+ alert("Project saved");hideForms();await load();
+}
+async function addPayment(){
+ const amount=Number($("paymentAmount").value);
+ if(!$("paymentProject").value||amount<=0){alert("Select project and enter valid amount");return}
+ const {error}=await db.from("payments").insert({
+  project_id:$("paymentProject").value,amount,
+  payment_date:$("paymentDate").value||new Date().toISOString().slice(0,10),
+  payment_method:$("paymentMethod").value,
+  reference_number:$("reference").value.trim()||null,
+  status:"pending_verification",created_by:user.id
+ });
+ if(error){alert(error.message);return}
+ alert("Payment saved as pending verification");hideForms();await load();
+}
+async function verify(id,status){
+ if(!confirm("Change payment status to "+status+"?"))return;
+ const {error}=await db.from("payments").update({status}).eq("id",id);
+ if(error){alert(error.message);return}
+ await load();
+}
+function exportCSV(){
+ const rows=[["Project","Client","Value","Verified","Outstanding"]];
+ projects.forEach(p=>{
+  const c=clients.find(x=>x.id===p.client_id),v=Number(p.project_value||0),got=paid(p.id);
+  rows.push([p.project_name,c?.client_name||"",v,got,v-got]);
+ });
+ const csv=rows.map(r=>r.map(x=>'"'+String(x??"").replace(/"/g,'""')+'"').join(",")).join("\n");
+ const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+ const fileURL=window.URL.createObjectURL(blob);
+ const a=document.createElement("a");a.href=fileURL;a.download="CEG-payment-report.csv";a.click();
+ window.URL.revokeObjectURL(fileURL);
+}
 
--- Payment and collection records
-create table if not exists public.payments (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references public.projects(id),
-  amount numeric(14,2) not null check (amount > 0),
-  payment_date date not null default current_date,
-  payment_mode text,
-  reference_number text,
-  notes text,
-  status text not null default 'recorded'
-    check (status in ('recorded','verified','rejected')),
-  recorded_by uuid references public.profiles(id),
-  verified_by uuid references public.profiles(id),
-  created_at timestamptz default now()
-);
-
--- Performance indexes
-create index if not exists idx_clients_user
-  on public.clients(user_id);
-
-create index if not exists idx_projects_client
-  on public.projects(client_id);
-
-create index if not exists idx_payments_project
-  on public.payments(project_id);
-
-create index if not exists idx_payments_date
-  on public.payments(payment_date);
-
--- Enable row-level security
-alter table public.profiles enable row level security;
-alter table public.clients enable row level security;
-alter table public.projects enable row level security;
-alter table public.payments enable row level security;
-
--- Profiles: users see their own profile; staff see all
-drop policy if exists "Profile access" on public.profiles;
-create policy "Profile access"
-on public.profiles for select
-to authenticated
-using (id = auth.uid() or public.is_staff());
-
--- Clients: staff manage records; clients see only their own
-drop policy if exists "Staff manage clients" on public.clients;
-create policy "Staff manage clients"
-on public.clients for all
-to authenticated
-using (public.is_staff())
-with check (public.is_staff());
-
-drop policy if exists "Client view own record" on public.clients;
-create policy "Client view own record"
-on public.clients for select
-to authenticated
-using (user_id = auth.uid());
-
--- Projects: staff manage all; clients see their own
-drop policy if exists "Staff manage projects" on public.projects;
-create policy "Staff manage projects"
-on public.projects for all
-to authenticated
-using (public.is_staff())
-with check (public.is_staff());
-
-drop policy if exists "Client view own projects" on public.projects;
-create policy "Client view own projects"
-on public.projects for select
-to authenticated
-using (
-  exists (
-    select 1 from public.clients c
-    where c.id = projects.client_id
-      and c.user_id = auth.uid()
-  )
-);
-
--- Payments: staff manage; clients view their project payments
-drop policy if exists "Staff manage payments" on public.payments;
-create policy "Staff manage payments"
-on public.payments for all
-to authenticated
-using (public.is_staff())
-with check (public.is_staff());
-
-drop policy if exists "Client view own payments" on public.payments;
-create policy "Client view own payments"
-on public.payments for select
-to authenticated
-using (
-  exists (
-    select 1
-    from public.projects p
-    join public.clients c on c.id = p.client_id
-    where p.id = payments.project_id
-      and c.user_id = auth.uid()
-  )
-);
-
--- Permissions
-grant usage on schema public to authenticated;
-grant select on public.profiles to authenticated;
-grant select, insert, update, delete
-  on public.clients, public.projects, public.payments
-  to authenticated;
-
--- Restrict anonymous access
-revoke all on public.profiles, public.clients,
-  public.projects, public.payments from anon;
-
+$("loginBtn").onclick=login;
+$("signupBtn").onclick=signup;
+$("logoutBtn").onclick=logout;
+$("saveClient").onclick=addClient;
+$("saveProject").onclick=addProject;
+$("savePayment").onclick=addPayment;
+$("refreshBtn").onclick=load;
+$("exportBtn").onclick=exportCSV;
+$("paymentDate").value=new Date().toISOString().slice(0,10);
+document.addEventListener("click",e=>{
+ const t=e.target.closest("[data-toggle]");if(t)$(t.dataset.toggle).classList.toggle("hidden");
+ const c=e.target.closest("[data-close]");if(c)$(c.dataset.close).classList.add("hidden");
+ const v=e.target.closest("[data-verify]");if(v)verify(v.dataset.verify,v.dataset.status);
+});
+db.auth.onAuthStateChange((event,session)=>{if(session?.user)setTimeout(start,0)});
+start();
+</script>
+</body>
+  </html>
+  
