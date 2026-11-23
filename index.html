@@ -347,6 +347,7 @@ function render(){
  $("adminAddEntryBtn").classList.toggle("hidden",!admin);
  $("adminTrackingBtn").classList.toggle("hidden",!admin);
  $("recordPaymentBtn").classList.toggle("hidden",!admin&&projects.length===0);
+ $("recordPaymentBtn").textContent=admin?"+ Record Payment":"+ Submit Payment";
  $("paymentForm").querySelector("h3").textContent=admin?"Record Payment":"Submit Payment Details";
  $("adminClientListSection").classList.toggle("hidden",!admin);
  $("adminProjectFields").classList.toggle("hidden",!admin);
