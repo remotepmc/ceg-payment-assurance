@@ -186,7 +186,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <label>16. Material Delivered Date</label><input id="materialDelivered" type="date">
 <label>17. Billing Delay Reason</label><select id="projectBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
 <label>18. Payment Delay Reason</label><select id="projectPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
-<label>19. Service Details</label><textarea id="projectServiceDetails" placeholder="Enter service name and price"></textarea>
+<label>19. Select CEG Service (with price)</label><select id="projectServiceDetails"><option value="">Select a CEG service</option><option value="Action Plan — ₹299*">Action Plan — ₹299*</option><option value="Aapka Naksha 2D — ₹999*">Aapka Naksha 2D — ₹999*</option><option value="Site Anusasan Online — ₹1,999*">Site Anusasan Online — ₹1,999*</option><option value="Sales ki Bhasha Online — ₹1,999*">Sales ki Bhasha Online — ₹1,999*</option><option value="Be Prepared Online — ₹1,999*">Be Prepared Online — ₹1,999*</option><option value="KYG — Know Your Ghar — ₹1,999*">KYG — Know Your Ghar — ₹1,999*</option><option value="KYW — Know Your Work — ₹2,999*">KYW — Know Your Work — ₹2,999*</option><option value="ANGAD — Aapka Doot — ₹4,999*">ANGAD — Aapka Doot — ₹4,999*</option><option value="Third Eye Remote PMC — ₹12,000*">Third Eye Remote PMC — ₹12,000*</option></select>
 <label>20. Money Leakage (₹)</label><input id="projectMoneyLeakage" type="number" min="0" step="0.01">
 <label>21. Remarks</label><textarea id="projectRemarks" placeholder="Enter project remarks"></textarea></div>
 <p class="muted">Saved projects are automatically visible to Admin. No separate submission or resubmission step is required. Client payment entries remain pending Admin verification.</p>
@@ -557,7 +557,7 @@ function openClientSubmittedProject(projectId){
  $("projectBillingDelayReason").value=p.billing_delay_reason||"";
  $("projectPaymentDelayReason").value=p.payment_delay_reason||"";
  $("projectRemarks").value=p.client_remarks||"";
- $("projectServiceDetails").value=p.service_details||"";$("projectMoneyLeakage").value=p.money_leakage??"";
+ const savedService=p.service_details||"";if(savedService&&!Array.from($("projectServiceDetails").options).some(o=>o.value===savedService))$("projectServiceDetails").add(new Option(savedService+" (existing saved value)",savedService));$("projectServiceDetails").value=savedService;$("projectMoneyLeakage").value=p.money_leakage??"";
  $("projectCodePreview").textContent="Project ID: "+(p.project_code||"");$("projectCodePreview").dataset.projectCode=p.project_code||"";$("projectCodePreview").classList.remove("hidden");
 
  $("adminSubmissionList").classList.add("hidden");
@@ -702,7 +702,7 @@ async function deleteClientProject(id){
  await load();
 }
 function resetClientProjectForm(){
- ["projectName","projectStart","expectedProjectEnd","projectEnd","billingDate","billingAmount","projectPaymentAmount","projectPaymentDate","materialDispatch","materialDelivered","projectServiceDetails","projectMoneyLeakage","projectRemarks"].forEach(id=>{if($(id))$(id).value="";});
+ ["projectName","projectStart","expectedProjectEnd","projectEnd","billingDate","billingAmount","projectPaymentAmount","projectPaymentDate","materialDispatch","materialDelivered","projectMoneyLeakage","projectRemarks"].forEach(id=>{if($(id))$(id).value="";});$("projectServiceDetails").value="";$("projectServiceDetails").querySelectorAll("option[data-legacy-service]").forEach(o=>o.remove());
  ["projectType","projectPaymentType","projectWipReason","projectBillingDelayReason","projectPaymentDelayReason"].forEach(id=>{if($(id))$(id).selectedIndex=0;});
  $("billingDone").value="false";$("projectCegDate").value=new Date().toISOString().slice(0,10);
  $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Generate Project ID";
