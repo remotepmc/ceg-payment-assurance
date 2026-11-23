@@ -202,7 +202,7 @@ const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[],activeCompanyId="";
-const isStaff=()=>profile?.role==="admin";
+const isAdmin=()=>profile?.role==="admin";
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function hideForms(){["clientForm","projectForm","adminTrackingForm","paymentForm"].forEach(id=>$(id).classList.add("hidden"))}
@@ -231,8 +231,8 @@ async function start(){
  $("app").classList.remove("hidden");
  $("welcome").textContent="Welcome, "+(profile.full_name||user.email);
  $("roleText").textContent="Account role: "+profile.role.replaceAll("_"," ");
- $("staff").classList.remove("hidden");
  await load();
+ $("staff").classList.remove("hidden");
 }
 
 async function load(){
@@ -245,7 +245,7 @@ async function load(){
  ]);
  for(const x of [c,p,pa,co,at])if(x.error){alert(x.error.message);return}
  clients=c.data||[];projects=p.data||[];payments=pa.data||[];companies=co.data||[];adminTracking=at.data||[];
- if(!isStaff()){
+ if(!isAdmin()){
   const ids=clients.filter(x=>x.user_id===user.id).map(x=>x.id);
   projects=projects.filter(x=>ids.includes(x.client_id));
   payments=payments.filter(x=>projects.some(p=>p.id===x.project_id));
@@ -346,6 +346,7 @@ function render(){
   const admin=isStaff();
  $("adminAddEntryBtn").classList.toggle("hidden",!admin);
  $("adminTrackingBtn").classList.toggle("hidden",!admin);
+  $("exportBtn").classList.toggle("hidden",!admin);
  $("recordPaymentBtn").classList.toggle("hidden",!admin&&projects.length===0);
  $("recordPaymentBtn").textContent=admin?"+ Record Payment":"+ Submit Payment";
  $("paymentForm").querySelector("h3").textContent=admin?"Record Payment":"Submit Payment Details";
@@ -359,16 +360,17 @@ function render(){
  $("clientCompany").innerHTML='<option value="">Select company</option>'+companies.map(c=>'<option value="'+c.id+'">'+esc(c.company_name)+'</option>').join("");
  $("trackingProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc(p.project_name)+'</option>').join("");
 }
-async async function addClient(){
+async function addClient(){
  const name=$("clientName").value.trim(),newCompany=$("newCompanyName").value.trim();
- if(!name||!$("clientCategory").value){alert("Enter client name and select category");return}
+ const clientEmail=$("clientEmail").value.trim();
+ if(!name||!$("clientCategory").value||!clientEmail){alert("Enter client name, category and client login email");return}
  let companyId=$("clientCompany").value||null;
  if(newCompany){
   const {data:company,error:companyError}=await db.from("companies").insert({company_name:newCompany,created_by:user.id}).select("id").single();
   if(companyError){alert("Company could not be saved: "+companyError.message);return}
   companyId=company.id;
  }
- const {error}=await db.from("clients").insert({client_name:name,company_id:companyId,client_category:$("clientCategory").value,email:$("clientEmail").value.trim()||null,phone:$("clientPhone").value.trim()||null,created_by:user.id});
+ const {error}=await db.from("clients").insert({client_name:name,company_id:companyId,client_category:$("clientCategory").value,email:clientEmail,phone:$("clientPhone").value.trim()||null,created_by:user.id});
  if(error){alert("Client could not be saved: "+error.message);return}
  $("newCompanyName").value="";alert("Entry saved");hideForms();await load();
 }
@@ -386,7 +388,7 @@ async function addProject(){
  }
  alert("Project saved");hideForms();await load();
 }
-async async function saveAdminTracking(){
+async function saveAdminTracking(){
  const projectId=$("trackingProject").value;if(!projectId){alert("Select a project");return}
  const val=id=>$(id).value===""?null:Number($(id).value);
  const {error}=await db.from("project_admin_tracking").upsert({
