@@ -65,13 +65,13 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <main>
 <section id="auth" class="panel">
 <h3>Login / Create Account</h3>
-<label>Email</label><input id="email" type="email" placeholder="Your email">
+<label>Email or Mobile Number</label><input id="email" type="text" placeholder="Email or 10-digit mobile number">
 <label>Password</label><input id="password" type="password" placeholder="Password">
 <label>Full Name (new account)</label><input id="fullName" placeholder="Your full name">
 <button id="loginBtn">Login</button>
 <button id="signupBtn" class="secondary">Create Account</button>
 <p id="message" class="muted"></p>
-<p class="notice">New accounts receive Client access. Admin access is assigned separately. To link a Client login, use the same email address saved by Admin in the client entry.</p>
+<p class="notice">New accounts receive Client access. Admin access is assigned separately. To link a Client login, use the same email address or mobile number saved by Admin in the client entry.</p>
 </section>
 
 <section id="app" class="hidden">
@@ -102,8 +102,9 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <label>Category</label><select id="clientCategory">
 <option value="">Select category</option><option>Individual</option><option>Contractor Civil</option><option>Contractor Interior</option><option>Architect</option><option>Interior Designer</option><option>Builder</option><option>SCM-WS</option><option>SCM-Ret</option><option>Manufacturer</option>
 </select>
-<label>Client Login Email</label><input id="clientEmail" type="email"><p class="muted">The client must sign up using this same email address. Their login will then link to this client record.</p>
-<label>Phone</label><input id="clientPhone">
+<label>Client Login Email (optional)</label><input id="clientEmail" type="email" placeholder="Enter email if available">
+<label>Client Mobile Number</label><input id="clientPhone" type="tel" placeholder="10-digit mobile number">
+<p class="muted">Enter either email or mobile number. The client must create their login using the same detail.</p>
 <button id="saveClient">Save Entry</button>
 <button data-close="clientForm" class="secondary">Cancel</button>
 </div>
@@ -209,7 +210,10 @@ function hideForms(){["clientForm","projectForm","adminTrackingForm","paymentFor
 
 async function login(){
  $("message").textContent="Signing in...";
- const {error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+ const loginId=$("email").value.trim();
+  const digits=loginId.replace(/\D/g,"");
+  const credentials=loginId.includes("@")?{email:loginId,password:$("password").value}:{phone:digits.length===10?"+91"+digits:loginId,password:$("password").value};
+  const {error}=await db.auth.signInWithPassword(credentials);
  if(error)$("message").textContent=error.message;
 }
 async function signup(){
@@ -340,10 +344,10 @@ function render(){
  $("clientList").innerHTML=clients.length?clients.map(c=>{const company=companies.find(x=>x.id===c.company_id);return `<div class="project"><b>${esc(c.client_name)}</b><p>Company: ${esc(company?.company_name||"Not linked")} | Category: ${esc(c.client_category||"—")}</p><p>${esc(c.email||"")} ${c.phone?"| "+esc(c.phone):""}</p></div>`}).join(""):"<p class='muted'>No clients registered yet.</p>";
  $("history").innerHTML=payments.length?payments.map(p=>{
   const project=projects.find(x=>x.id===p.project_id);
-  const buttons=isStaff()&&p.status==="recorded"?`<p><button data-verify="${p.id}" data-status="verified">Verify</button><button class="danger" data-verify="${p.id}" data-status="rejected">Reject</button></p>`:"";
+  const buttons=isAdmin()&&p.status==="recorded"?`<p><button data-verify="${p.id}" data-status="verified">Verify</button><button class="danger" data-verify="${p.id}" data-status="rejected">Reject</button></p>`:"";
   return `<div class="project"><b>${money(p.amount)}</b><p>${esc(project?.project_name||"Project")} | ${esc(p.payment_date||"")}</p><p>${esc(p.payment_mode||"")} | Ref: ${esc(p.reference_number||"Not provided")}</p><span class="badge">${esc(p.status)}</span>${buttons}</div>`;
  }).join(""):"<p class='muted'>No payment records yet.</p>";
-  const admin=isStaff();
+  const admin=isAdmin();
  $("adminAddEntryBtn").classList.toggle("hidden",!admin);
  $("adminTrackingBtn").classList.toggle("hidden",!admin);
   $("exportBtn").classList.toggle("hidden",!admin);
@@ -370,14 +374,14 @@ async function addClient(){
   if(companyError){alert("Company could not be saved: "+companyError.message);return}
   companyId=company.id;
  }
- const {error}=await db.from("clients").insert({client_name:name,company_id:companyId,client_category:$("clientCategory").value,email:clientEmail,phone:$("clientPhone").value.trim()||null,created_by:user.id});
+ const {error}=await db.from("clients").insert({client_name:name,company_id:companyId,client_category:$("clientCategory").value,email:clientEmail,phone:clientPhone?(clientPhone.replace(/\D/g,"").length===10?"+91"+clientPhone.replace(/\D/g,""):clientPhone):null,created_by:user.id});
  if(error){alert("Client could not be saved: "+error.message);return}
  $("newCompanyName").value="";alert("Entry saved");hideForms();await load();
 }
 async function addProject(){
  const name=$("projectName").value.trim(),billing= $("billingAmount").value;
  const linkedClient=clients.find(c=>c.user_id===user.id);
- const clientId=isStaff()?$("projectClient").value:linkedClient?.id;
+ const clientId=isAdmin()?$("projectClient").value:linkedClient?.id;
  if(!clientId||!name||!$("projectType").value){alert("A linked client account, project name and project type are required");return}
  const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",wip_delay_reason:$("wipReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("id").single();
