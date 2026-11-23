@@ -205,7 +205,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
  </div>
 </div>
 
-<h3>Add Revision — Pending Admin Review</h3><div id="projects"></div>
+<h3 id="pendingProjectsHeading">My Projects — Awaiting Admin Approval</h3><div id="projects"></div>
 <h3>Final Project</h3><div id="finalProjects"></div>
 <h3>Payment History</h3><div id="history"></div>
 <p id="clientHelp" class="notice hidden">Your account is not yet linked to a client record. Contact your CEG administrator.</p>
@@ -466,7 +466,7 @@ function render(){
   const c=clients.find(x=>x.id===p.client_id),v=Number(p.project_value||0),got=paid(p.id);
   const percent=v>0?Math.min(100,got/v*100):0,t=adminTracking.find(x=>x.project_id===p.id)||{};
   const fullDate=fullCollectionDate(p),d=delayInfo(p);
-  const badge=(label,item,reason)=>item.days===null?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
+  const badge=(label,item,reason)=>item.days===null||item.days<1?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
   const adminActions=isAdmin()&&p.workflow_stage!=="final"?`<p><button data-revise="${p.id}">Open Add Revision</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:"";
   const service=t.ceg_service_designed||"Not yet mapped by Admin";
@@ -496,6 +496,7 @@ function render(){
   ].filter(Boolean).join(" "):"";
   return `<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name)}</b><p>Revision: ${Number(p.revision_no||1)} | Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | Expected End: ${esc(p.expected_project_end_date||"—")} | Actual End: ${esc(p.actual_project_end_date||p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p>${isAdmin()?`<p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p><p>${badge("Execution delay",d.execution,t.project_delay_reason)} ${badge("Billing delay",d.billing,t.billing_delay_reason)} ${badge("Payment delay",d.payment,t.payment_delay_reason)}</p><p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p>`:`<p><span class="status ${p.workflow_stage==="final"?"green":"yellow"}">${p.workflow_stage==="final"?"Final Project Approved":"Under Admin Review"}</span></p><p>${clientDelays||"No active Call To Action currently."}</p>${serviceMarkup}${clientApproval}${clientEdit}`}<div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div><details><summary>Revision History (${projectRevisions.filter(r=>r.project_id===p.id).length})</summary><ol>${history||"<li>No history recorded</li>"}</ol></details>${adminActions}</div>`;
  };
+ $("pendingProjectsHeading").textContent=isAdmin()?"Add Revision — Pending Admin Review":"My Projects — Awaiting Admin Approval";
  const pendingProjects=projects.filter(p=>p.workflow_stage!=="final");
  const finalProjects=projects.filter(p=>p.workflow_stage==="final");
  $("projects").innerHTML=pendingProjects.length?pendingProjects.map(renderProjectCard).join(""):"<p class='muted'>No projects awaiting Admin revision.</p>";
