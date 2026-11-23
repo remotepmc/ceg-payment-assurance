@@ -87,10 +87,10 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 
 <section id="staff" class="hidden">
 <div class="actions">
-<button data-toggle="clientForm">+ Add New Entry</button>
-<button data-toggle="projectForm">+ Add Project</button>
+<button id="adminAddEntryBtn" data-toggle="clientForm">+ Add New Entry</button>
+<button id="addProjectBtn" data-toggle="projectForm">+ Add Project</button>
 <button id="adminTrackingBtn" data-toggle="adminTrackingForm">Update Admin Delays</button>
-<button data-toggle="paymentForm">+ Record Payment</button>
+<button id="adminRecordPaymentBtn" data-toggle="paymentForm">+ Record Payment</button>
 <button id="exportBtn" class="secondary">Export Report</button>
 <button id="refreshBtn" class="secondary">Refresh</button>
 </div>
@@ -109,7 +109,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 </div>
 <div id="projectForm" class="panel hidden">
 <h3>Register Project</h3>
-<label>Select Client</label><select id="projectClient"></select>
+<div id="projectClientAdminOnly"><label>Select Client</label><select id="projectClient"></select></div>
 <label>Project Name</label><input id="projectName">
 <label>Project Type</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
 <label>Project Start Date</label><input id="projectStart" type="date">
@@ -165,7 +165,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <button id="savePayment">Save Payment Record</button>
 <button data-close="paymentForm" class="secondary">Cancel</button>
 </div>
-<h3>Registered Clients</h3><div id="clientList"><p class="muted">No clients registered yet.</p></div>
+<div id="adminClientListSection"><h3>Registered Clients</h3><div id="clientList"><p class="muted">No clients registered yet.</p></div></div>
 </section>
 
 
@@ -202,8 +202,7 @@ const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[],activeCompanyId="";
-const staffRoles=["admin","staff"];
-const isStaff=()=>staffRoles.includes(profile?.role);
+const isStaff=()=>profile?.role==="admin";
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function hideForms(){["clientForm","projectForm","adminTrackingForm","paymentForm"].forEach(id=>$(id).classList.add("hidden"))}
@@ -232,7 +231,7 @@ async function start(){
  $("app").classList.remove("hidden");
  $("welcome").textContent="Welcome, "+(profile.full_name||user.email);
  $("roleText").textContent="Account role: "+profile.role.replaceAll("_"," ");
- $("staff").classList.toggle("hidden",!isStaff());
+ $("staff").classList.remove("hidden");
  await load();
 }
 
@@ -251,7 +250,7 @@ async function load(){
   projects=projects.filter(x=>ids.includes(x.client_id));
   payments=payments.filter(x=>projects.some(p=>p.id===x.project_id));
   clients=clients.filter(x=>x.user_id===user.id);
-  $("clientHelp").classList.toggle("hidden",projects.length>0);
+  $("clientHelp").classList.toggle("hidden",clients.length>0);
  }
  render();
 }
@@ -344,14 +343,19 @@ function render(){
   const buttons=isStaff()&&p.status==="recorded"?`<p><button data-verify="${p.id}" data-status="verified">Verify</button><button class="danger" data-verify="${p.id}" data-status="rejected">Reject</button></p>`:"";
   return `<div class="project"><b>${money(p.amount)}</b><p>${esc(project?.project_name||"Project")} | ${esc(p.payment_date||"")}</p><p>${esc(p.payment_mode||"")} | Ref: ${esc(p.reference_number||"Not provided")}</p><span class="badge">${esc(p.status)}</span>${buttons}</div>`;
  }).join(""):"<p class='muted'>No payment records yet.</p>";
- if(isStaff()){
-  $("projectClient").innerHTML=clients.map(c=>`<option value="${c.id}">${esc(c.client_name)}</option>`).join("");
-  $("paymentProject").innerHTML=projects.map(p=>`<option value="${p.id}">${esc(p.project_name)}</option>`).join("");
-  $("clientCompany").innerHTML='<option value="">Select company</option>'+companies.map(c=>`<option value="${c.id}">${esc(c.company_name)}</option>`).join("");
-  $("adminProjectFields").classList.toggle("hidden",profile.role!=="admin");
-  $("adminTrackingBtn").classList.toggle("hidden",profile.role!=="admin");
-  $("trackingProject").innerHTML=projects.map(p=>`<option value="${p.id}">${esc(p.project_name)}</option>`).join("");
- }
+  const admin=isStaff();
+ $("adminAddEntryBtn").classList.toggle("hidden",!admin);
+ $("adminTrackingBtn").classList.toggle("hidden",!admin);
+ $("adminRecordPaymentBtn").classList.toggle("hidden",!admin);
+ $("adminClientListSection").classList.toggle("hidden",!admin);
+ $("adminProjectFields").classList.toggle("hidden",!admin);
+ $("projectClientAdminOnly").classList.toggle("hidden",!admin);
+ $("addProjectBtn").classList.toggle("hidden",!admin&&clients.length===0);
+ $("projectClient").innerHTML=clients.map(c=>'<option value="'+c.id+'">'+esc(c.client_name)+'</option>').join("");
+ if(!admin&&clients.length) $("projectClient").value=clients[0].id;
+ $("paymentProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc(p.project_name)+'</option>').join("");
+ $("clientCompany").innerHTML='<option value="">Select company</option>'+companies.map(c=>'<option value="'+c.id+'">'+esc(c.company_name)+'</option>').join("");
+ $("trackingProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc(p.project_name)+'</option>').join("");
 }
 async function addClient(){
  const name=$("clientName").value.trim(),newCompany=$("newCompanyName").value.trim();
@@ -368,8 +372,10 @@ async function addClient(){
 }
 async function addProject(){
  const name=$("projectName").value.trim(),billing= $("billingAmount").value;
- if(!$("projectClient").value||!name||!$("projectType").value){alert("Select client and project type, and enter project name");return}
- const payload={client_id:$("projectClient").value,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",wip_delay_reason:$("wipReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",created_by:user.id};
+ const linkedClient=clients.find(c=>c.user_id===user.id);
+ const clientId=isStaff()?$("projectClient").value:linkedClient?.id;
+ if(!clientId||!name||!$("projectType").value){alert("A linked client account, project name and project type are required");return}
+ const payload={client_id:clientId,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",wip_delay_reason:$("wipReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("id").single();
  if(error){alert(error.message);return}
  if(profile.role==="admin"){
@@ -437,7 +443,7 @@ $("exportBtn").onclick=exportCSV;
 
 ["recordSearch","filterCompany","filterClient","filterCategory","filterProjectType","filterHold"].forEach(id=>$(id).addEventListener("input",renderRecords));
 $("paymentDate").value=new Date().toISOString().slice(0,10);
-if(profile?.role!=="admin")$("adminProjectFields")?.classList.add("hidden");
+
 document.addEventListener("click",e=>{
  const companyPick=e.target.closest("[data-client-company]");
  if(companyPick){activeCompanyId=companyPick.dataset.clientCompany;renderAdminClientSidebar();$("filterCompany").value="";renderRecords();}
