@@ -43,7 +43,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 @media(max-width:420px){.cta-grid{grid-template-columns:1fr}}
 .status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:22px;font-weight:bold;margin:3px}
 .green{background:#e4f5ec;color:#187449}.yellow{background:#fff4d6;color:#946200}.red{background:#fff0ef;color:#bd3939}.neutral{background:#edf1f6;color:#526276}
-@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
+.project-summary-scroll{max-width:100%;overflow-x:auto}.project-summary-scroll table{border-collapse:collapse;min-width:2550px;width:max-content;font-size:18px}.project-summary-scroll th,.project-summary-scroll td{border:1px solid #dfe7f1;padding:10px 9px;white-space:nowrap;vertical-align:top}.project-summary-scroll th{background:#eaf1fa;position:sticky;top:0;z-index:1}.project-summary-scroll td{background:#fff}.project-summary-scroll button{font-size:17px;padding:7px 10px}.client-view #adminTrackingBtn,.client-view #recordPaymentBtn,.client-view #exportBtn,.client-view #refreshBtn,.client-view #projectLockNote{display:none!important}.client-view #clientProjectSummary{display:block!important}.client-view #projectClientAdminOnly{display:none!important}.client-only-project-field{display:none}.client-view .client-only-project-field{display:block}.client-view #staff>.actions #addEntryBtn,.client-view #staff>.actions #addProjectBtn{display:inline-block!important}@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
 
 .table-wrap{overflow-x:auto;background:#fff;border-radius:10px;margin:10px 0;box-shadow:0 2px 8px #0001}
 #recordsTable{border-collapse:collapse;width:100%;min-width:1450px;font-size:24px}
@@ -135,44 +135,38 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <button id="saveClient">Save Entry</button>
 <button data-close="clientForm" class="secondary">Cancel</button>
 </div>
-<div id="projectForm" class="panel hidden">
-<h3>Add Project</h3>
-<div class="form-section"><h4>1. Project Details</h4>
-<div id="projectClientAdminOnly"><label>Select Client</label><select id="projectClient"></select></div>
-<label>Project Name</label><input id="projectName">
-<label>Project Type</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
-</div>
-<div class="form-section"><h4>2. Project Timeline</h4>
-<label>Project Start Date *</label><input id="projectStart" type="date" required data-start-for="expectedProjectEnd">
-<label>Expected Project End Date *</label><select id="expectedProjectEnd" required data-start-id="projectStart"><option value="">Select start date first</option></select>
-<label>Actual Project End Date</label><input id="projectEnd" type="date" data-date-role="actual">
-<label>Project Hold</label><select id="projectHold"><option value="false">No</option><option value="true">Yes</option></select>
-<label>Project Execution / WIP Delay Reason</label><select id="projectWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
-</div>
-<div class="form-section"><h4>3. Billing & Materials</h4>
-<label>Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
-<label>Billing Date</label><input id="billingDate" type="date" data-date-role="billing">
-<label>Billing Amount with Tax (INR, whole rupees)</label><input id="billingAmount" type="number" min="0" step="1">
-<label>Material Dispatch Date</label><input id="materialDispatch" type="date" data-date-role="dispatch">
-<label>Billing Delay Reason</label><select id="projectBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
-<label>Material Delivered Date</label><input id="materialDelivered" type="date" data-date-role="delivered">
-</div>
-<div id="projectPaymentSection" class="form-section"><h4>4. Payment Details</h4>
-<label>Payment Made</label><select id="projectPaymentType"><option value="">Select payment type</option><option value="Full">Full</option><option value="Part">Part</option></select>
-<label>Payment Amount (INR)</label><input id="projectPaymentAmount" type="number" min="0.01" step="0.01">
-<label>Payment Made Date</label><input id="projectPaymentDate" type="date">
-</div>
-<div class="form-section"><h4>5. Payment Delay Reason</h4>
-<label>Payment Delay Reason</label><select id="projectPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
-</div>
-<div class="form-section"><h4>6. Comments / Remarks</h4>
-<label>Comments / Remarks</label><textarea id="projectRemarks" placeholder="Add any additional project information or remarks for Admin review"></textarea>
-</div>
-<p class="muted">Auto-sync: Billing Date = Dispatch Date; Delivered Date = Billing Date + 7 days; Actual End Date follows Material Delivered Date. You can manually edit Actual End Date when needed. Client payment entries are saved as recorded and require Admin verification.</p>
-
-<button id="saveProject">Save Project</button>
-<button data-close="projectForm" class="secondary">Cancel</button>
-</div>
+<section id="clientProjectSummary" class="panel">
+<h3>My Project Summary</h3><p class="muted">One project per row. Scroll horizontally to view all 18 columns.</p>
+<div class="table-wrap project-summary-scroll"><table id="clientProjectSummaryTable"><thead><tr>
+<th>Client Name</th><th>Project ID</th><th>CEG Date</th><th>Project Name</th><th>Project Type</th><th>Project Start Date</th><th>Expected Project End Date</th><th>Actual Project End Date</th><th>Project Execution / WIP Delay Reason</th><th>Billing Date</th><th>Billing Amount with Tax</th><th>Payment Date</th><th>Payment Amount</th><th>Service Details</th><th>Execution Delay (Days)</th><th>Billing Delay (Days)</th><th>Payment Delay (Days)</th><th>Delete</th>
+</tr></thead><tbody id="clientProjectSummaryRows"><tr><td colspan="18" class="muted">No projects added yet.</td></tr></tbody></table></div></section>
+<div id="projectForm" class="panel hidden"><h3>Add Project</h3>
+<div class="form-section"><h4>Add Project · 21 Fields</h4>
+<div id="projectClientAdminOnly"><label>Client Name</label><select id="projectClient"></select></div>
+<div class="client-only-project-field"><label>1. Client Name</label><input id="projectClientNameDisplay" readonly></div>
+<label>2. CEG Date</label><input id="projectCegDate" type="date" readonly>
+<label>3. Project Name *</label><input id="projectName" placeholder="Enter project name">
+<button type="button" id="generateProjectCodeBtn" class="secondary">Generate Project ID</button><p id="projectCodePreview" class="notice hidden"></p>
+<label>4. Project Type *</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
+<label>5. Project Start Date *</label><input id="projectStart" type="date" required data-start-for="expectedProjectEnd">
+<label>6. Expected Project End Date *</label><select id="expectedProjectEnd" required data-start-id="projectStart"><option value="">Select start date first</option></select>
+<label>7. Actual Project End Date</label><input id="projectEnd" type="date">
+<label>8. Project Execution / WIP Delay Reason</label><select id="projectWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
+<label>9. Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
+<label>10. Billing Date</label><input id="billingDate" type="date">
+<label>11. Billing Amount with Tax (₹)</label><input id="billingAmount" type="number" min="0" step="1">
+<label>12. Payment Status</label><select id="projectPaymentType"><option value="">Select payment status</option><option value="Full">Full</option><option value="Part">Part</option></select>
+<label>13. Payment Amount (₹)</label><input id="projectPaymentAmount" type="number" min="0" step="0.01">
+<label>14. Payment Date</label><input id="projectPaymentDate" type="date">
+<label>15. Material Dispatch Date</label><input id="materialDispatch" type="date">
+<label>16. Material Delivered Date</label><input id="materialDelivered" type="date">
+<label>17. Billing Delay Reason</label><select id="projectBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
+<label>18. Payment Delay Reason</label><select id="projectPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
+<label>19. Service Details</label><textarea id="projectServiceDetails" placeholder="Enter service name and price"></textarea>
+<label>20. Money Leakage (₹)</label><input id="projectMoneyLeakage" type="number" min="0" step="0.01">
+<label>21. Remarks</label><textarea id="projectRemarks" placeholder="Enter project remarks"></textarea></div>
+<p class="muted">Saved projects are automatically visible to Admin. No separate submission or resubmission step is required. Client payment entries remain pending Admin verification.</p>
+<button id="saveProject">Save Project</button><button data-close="projectForm" class="secondary">Cancel</button></div>
 <div id="adminTrackingForm" class="panel hidden">
 <h3>Add Revision (Admin)</h3>
 <label id="trackingProjectLabel">Select Project</label><select id="trackingProject"></select>
@@ -374,7 +368,7 @@ async function load(){
   db.from("project_revisions").select("id,project_id,revision_no,revision_type,revision_note,created_at,created_by").order("revision_no",{ascending:true})
  ]);
  for(const x of [c,p,pa,co,at,pr])if(x.error){alert(x.error.message);return}
- clients=c.data||[];projects=p.data||[];payments=pa.data||[];companies=co.data||[];adminTracking=at.data||[];projectRevisions=pr.data||[];
+ clients=c.data||[];projects=(p.data||[]).filter(x=>!x.deleted_at);payments=pa.data||[];companies=co.data||[];adminTracking=at.data||[];projectRevisions=pr.data||[];
  if(!isAdmin()){
   const ids=clients.filter(x=>x.user_id===user.id).map(x=>x.id);
   projects=projects.filter(x=>ids.includes(x.client_id));
@@ -450,12 +444,12 @@ function renderAdminClientSubmissions(){
  if(!isAdmin())return;
  const submitted=projects.filter(p=>{
   const client=clients.find(c=>c.id===p.client_id);
-  return !!client?.user_id&&p.created_by===client.user_id;
+  return !!client?.user_id&&p.created_by===client.user_id&&!p.deleted_at;
  }).sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
  $("adminSubmissionList").innerHTML=submitted.length?submitted.map(p=>{
   const client=clients.find(c=>c.id===p.client_id)||{};
   const company=companies.find(c=>c.id===client.company_id)?.company_name||"";
-  const stage=p.workflow_stage==="final"?"Final Project":p.workflow_stage==="revision"?"Submitted / Under Review":(p.workflow_stage||"Submitted");
+  const stage=p.workflow_stage==="final"?"Final Project":"New Project · Automatically Shared";
   return '<article class="project admin-submission-card"><div class="row"><b>'+esc(p.project_code||p.id)+'</b><span class="status '+(p.workflow_stage==="final"?"green":"yellow")+'">'+esc(stage)+'</span></div><p><b>Client:</b> '+esc(client.client_name||"—")+(company?' · '+esc(company):'')+'</p><p><b>Project:</b> '+esc(p.project_name||"—")+' · '+esc(p.project_type||"Type not selected")+'</p><p><b>Project ID:</b> '+esc(p.id)+'</p><button type="button" data-open-client-submission="'+esc(p.id)+'">Open Filled Project</button></article>';
  }).join(""):'<div class="notice">No client-submitted projects found.</div>';
 }
@@ -464,6 +458,7 @@ function closeAdminProjectEditor(){
  $("projectForm").classList.add("hidden");
  $("projectForm").querySelector("h3").textContent="Add Project";
  $("saveProject").textContent="Save Project";
+ $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Generate Project ID";
  $("projectClientAdminOnly").classList.remove("hidden");
  $("adminSubmissionList").classList.remove("hidden");
 }
@@ -497,6 +492,8 @@ function openClientSubmittedProject(projectId){
  $("projectBillingDelayReason").value=p.billing_delay_reason||"";
  $("projectPaymentDelayReason").value=p.payment_delay_reason||"";
  $("projectRemarks").value=p.client_remarks||"";
+ $("projectServiceDetails").value=p.service_details||"";$("projectMoneyLeakage").value=p.money_leakage??"";
+ $("projectCodePreview").textContent="Project ID: "+(p.project_code||"");$("projectCodePreview").dataset.projectCode=p.project_code||"";$("projectCodePreview").classList.remove("hidden");
  if($("materialDispatch").value)syncMaterialDateChain("materialDispatch");
  if(p.material_delivered_date){$("materialDelivered").value=p.material_delivered_date;$("projectEnd").value=p.actual_project_end_date||p.project_end_date||p.material_delivered_date;}
  $("adminSubmissionList").classList.add("hidden");
@@ -514,7 +511,7 @@ async function saveClientSubmittedProject(){
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter the payment amount and payment date.");return}
  const dispatchDate=$("materialDispatch").value||null,deliveredDate=$("materialDelivered").value||addCalendarDays(dispatchDate,7);
  const changes={
-  project_name:name,client_remarks:$("projectRemarks").value.trim()||null,
+  project_name:name,client_remarks:$("projectRemarks").value.trim()||null,service_details:$("projectServiceDetails").value.trim()||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value),
   project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),
   billing_done:$("billingDone").value==="true",billing_date:dispatchDate,
   project_type:$("projectType").value,project_start_date:$("projectStart").value,
@@ -610,7 +607,43 @@ async function openAdminProject(projectId){
  $("adminProjectDetail").classList.remove("hidden");
  $("adminProjectDetail").scrollIntoView({behavior:"smooth",block:"start"});
 }
+function projectAgingDays(from,to){return dateDays(from,to);}
+function renderClientProjectSummary(){
+ const body=$("clientProjectSummaryRows");if(!body)return;
+ if(isAdmin()){$("clientProjectSummary").classList.add("hidden");return;}
+ $("clientProjectSummary").classList.remove("hidden");
+ const today=new Date().toISOString().slice(0,10);
+ const rows=projects.slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+ if(!rows.length){body.innerHTML='<tr><td colspan="18" class="muted">No projects added yet.</td></tr>';return;}
+ body.innerHTML=rows.map(p=>{
+  const c=clients.find(x=>x.id===p.client_id)||{};
+  const pe=payments.filter(x=>x.project_id===p.id).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||"")));
+  const total=pe.reduce((sum,x)=>sum+Number(x.amount||0),0),last=pe.length?pe[pe.length-1]:null;
+  const expected=p.expected_project_end_date||null,actual=p.actual_project_end_date||p.project_end_date||null;
+  const execution=expected?projectAgingDays(expected,actual||today):null;
+  const billing=actual?projectAgingDays(actual,p.billing_done&&p.billing_date?p.billing_date:today):null;
+  const full=fullCollectionDate(p),target=Number(p.billing_amount_with_tax??p.project_value??0),verified=paid(p.id);
+  const payment=p.billing_date&&target>0?(full?projectAgingDays(p.billing_date,full):verified<target?projectAgingDays(p.billing_date,today):0):null;
+  const vals=[c.client_name||"—",p.project_code||"—",displayDate(p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—",p.service_details||"—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
+  return '<tr>'+vals.map(v=>'<td>'+esc(v)+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>';
+ }).join("");
+}
+async function deleteClientProject(id){
+ const p=projects.find(x=>x.id===id);if(!p)return;
+ if(!confirm("Delete "+(p.project_code||p.project_name)+"? It will disappear from the active Client and Admin lists."))return;
+ const {data,error}=await db.from("projects").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id,deleted_at").single();
+ if(error||!data){alert("Delete failed: "+(error?.message||"No record updated."));return;}
+ await load();
+}
+async function generateProjectId(){
+ const name=$("projectName").value.trim();if(!name){alert("Enter Project Name first.");$("projectName").focus();return;}
+ const btn=$("generateProjectCodeBtn");btn.disabled=true;btn.textContent="Generating...";
+ const {data,error}=await db.rpc("generate_project_code",{p_project_name:name});
+ if(error||!data){btn.disabled=false;btn.textContent="Generate Project ID";alert("Project ID generation failed: "+(error?.message||"No ID returned."));return;}
+ $("projectCodePreview").textContent="Project ID: "+data;$("projectCodePreview").dataset.projectCode=data;$("projectCodePreview").classList.remove("hidden");btn.textContent="Project ID Generated";
+}
 function render(){
+ renderClientProjectSummary();
  const approvedProjects=projects.filter(p=>p.workflow_stage==="final");
  const totalValue=approvedProjects.reduce((sum,p)=>sum+Number(p.billing_amount_with_tax??p.project_value??0),0);
  const verifiedCollection=approvedProjects.reduce((sum,p)=>sum+paid(p.id),0);
@@ -739,9 +772,11 @@ function render(){
  $("addProjectBtn").disabled=!isAdmin()&&clients.length===0;
  $("addProjectBtn").textContent="+ Add Project";
  $("projectLockNote").classList.toggle("hidden",isAdmin()||clients.length>0);
- $("saveProject").textContent=isAdmin()?"Save Project":"Submit for Admin Approval";
+ $("saveProject").textContent="Save Project";
  $("projectClient").innerHTML=clients.map(c=>'<option value="'+c.id+'">'+esc(c.client_name)+'</option>').join("");
  $("projectClient").value=clients[0]?.id||"";
+ $("projectClientNameDisplay").value=clients[0]?.client_name||"";
+ $("projectCegDate").value=new Date().toISOString().slice(0,10);
  $("paymentProject").innerHTML=projects.map(p=>'<option value="'+p.id+'">'+esc((p.project_code||"")+ " — "+p.project_name)+'</option>').join("");
  const previousTrackingProject=$("trackingProject").value;
  $("trackingProject").innerHTML=pendingProjects.map(p=>'<option value="'+p.id+'">'+esc((p.project_code||"")+ " — "+p.project_name)+'</option>').join("");
@@ -775,26 +810,16 @@ async function addClient(){
  hideForms();await load();
 }
 async function addProject(){
- if(adminEditingClientProjectId){await saveClientSubmittedProject();return}
- const name=$("projectName").value.trim(),billing=$("billingAmount").value;
- const clientId=$("projectClient").value;
- if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project End Date are mandatory.");return}
- const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value;
- const hasPayment=!!(payType||payAmount||payDate);
- if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter the payment amount and payment date.");return}
- const dispatchDate=$("materialDispatch").value||null,deliveredDate=$("materialDelivered").value||addCalendarDays(dispatchDate,7);
- const payload={client_id:clientId,project_name:name,client_remarks: $("projectRemarks").value.trim()||null,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:dispatchDate,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||deliveredDate||null,project_end_date:$("projectEnd").value||deliveredDate||null,project_hold:$("projectHold").value==="true",wip_delay_reason:$("projectWipReason").value||null,billing_delay_reason:$("projectBillingDelayReason").value||null,payment_delay_reason:$("projectPaymentDelayReason").value||null,material_dispatch_date:dispatchDate,material_delivered_date:deliveredDate,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
- const {data,error}=await db.from("projects").insert(payload).select("*").single();
- if(error){alert(error.message);return}
- const {error:historyError}=await db.from("project_revisions").insert({project_id:data.id,revision_no:1,revision_type:"submission",revision_data:data,revision_note:"Initial project submitted for Admin review",created_by:user.id});
- if(historyError){alert("Project saved, but initial revision history could not be saved: "+historyError.message);return}
- if(hasPayment){
-  const admin=isAdmin();
-  const paymentPayload={project_id:data.id,amount:Number(payAmount),payment_date:payDate,payment_type:payType,status:admin?"verified":"recorded",recorded_by:user.id,verified_by:admin?user.id:null,notes:admin?"Entered by Admin with project creation":"Submitted by Client for Admin verification"};
-  const {error:paymentError}=await db.from("payments").insert(paymentPayload);
-  if(paymentError){alert("Project saved, but payment entry failed: "+paymentError.message);hideForms();await load();return}
- }
- alert(isAdmin()?"Project saved successfully"+(hasPayment?" with verified payment entry.":"."):"Project submitted for Admin approval"+(hasPayment?" with payment pending Admin verification.":"")+" Project ID: "+data.project_code+" | Revision 1. It is now visible in Resubmit Project.");$("projectRemarks").value="";hideForms();await load();if(!isAdmin())document.querySelector('[data-client-tab="resubmitProjectTab"]')?.click();
+ if(adminEditingClientProjectId){await saveClientSubmittedProject();return;}
+ const name=$("projectName").value.trim(),billing=$("billingAmount").value,clientId=$("projectClient").value,projectCode=$("projectCodePreview").dataset.projectCode||"";
+ if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!projectCode||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Generate the Project ID and complete Project Name, Project Type, Project Start Date and Expected Project End Date.");return;}
+ const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value,hasPayment=!!(payType||payAmount||payDate);
+ if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter amount and date.");return;}
+ const payload={client_id:clientId,project_code:projectCode,project_name:name,client_remarks:$("projectRemarks").value.trim()||null,service_details:$("projectServiceDetails").value.trim()||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value),project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:false,wip_delay_reason:$("projectWipReason").value||null,billing_delay_reason:$("projectBillingDelayReason").value||null,payment_delay_reason:$("projectPaymentDelayReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ const {data,error}=await db.from("projects").insert(payload).select("*").single();if(error){alert(error.message);return;}
+ if(hasPayment){const {error:pe}=await db.from("payments").insert({project_id:data.id,amount:Number(payAmount),payment_date:payDate,payment_type:payType,status:"recorded",recorded_by:user.id,notes:"Client payment entry awaiting Admin verification"});if(pe){alert("Project saved, but payment entry failed: "+pe.message);await load();return;}}
+ alert("Project saved and automatically shared with Admin. Project ID: "+data.project_code);
+ hideForms();await load();
 }
 async function saveAdminTracking(){
  if(!isAdmin()){alert("Only Admin can add a revision.");return}
@@ -971,7 +996,9 @@ document.addEventListener("click",e=>{
  const companyPick=e.target.closest("[data-client-company]");
  if(companyPick){activeCompanyId=companyPick.dataset.clientCompany;renderAdminClientSidebar();$("filterCompany").value="";renderRecords();}
  const submitted=e.target.closest("[data-open-client-submission]");if(submitted)openClientSubmittedProject(submitted.dataset.openClientSubmission);
- const t=e.target.closest("[data-toggle]");if(t)$(t.dataset.toggle).classList.toggle("hidden");
+ const del=e.target.closest("[data-delete-client-project]");if(del)deleteClientProject(del.dataset.deleteClientProject);
+ const gen=e.target.closest("#generateProjectCodeBtn");if(gen)generateProjectId();
+ const t=e.target.closest("[data-toggle]");if(t){$(t.dataset.toggle).classList.toggle("hidden");if(t.dataset.toggle==="projectForm"&&!adminEditingClientProjectId){$("projectCegDate").value=new Date().toISOString().slice(0,10);$("projectClientNameDisplay").value=clients[0]?.client_name||"";}}
  const c=e.target.closest("[data-close]");if(c){if(c.dataset.close==="projectForm"&&adminEditingClientProjectId){closeAdminProjectEditor();}else $(c.dataset.close).classList.add("hidden");if(c.dataset.close==="adminTrackingForm"){adminClientEditProjectId=null;$("trackingProjectLabel").classList.remove("hidden");$("trackingProject").classList.remove("hidden");$("adminTrackingForm").querySelector("h3").textContent="Add Revision (Admin)";$("saveAdminTracking").textContent="Save Revision";}}
  const v=e.target.closest("[data-verify]");if(v)verify(v.dataset.verify,v.dataset.status);
  const clientEdit=e.target.closest("[data-edit-client-project]");if(clientEdit){const id=clientEdit.dataset.editClientProject;const p=projects.find(x=>x.id===id);if(!p){alert("Client project not found. Refresh and try again.");return}adminClientEditProjectId=id;if(![...$("trackingProject").options].some(o=>o.value===id))$("trackingProject").add(new Option((p.project_code||"")+" — "+p.project_name,id));$("trackingProject").value=id;$("trackingProject").dispatchEvent(new Event("change"));$("trackingProjectLabel").classList.add("hidden");$("trackingProject").classList.add("hidden");$("adminTrackingForm").querySelector("h3").textContent="Edit Client Submitted Project";$("saveAdminTracking").textContent="Save Project Changes";$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
