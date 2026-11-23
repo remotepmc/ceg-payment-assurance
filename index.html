@@ -133,6 +133,18 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <div id="adminTrackingForm" class="panel hidden">
 <h3>Add Revision (Admin)</h3>
 <label>Select Project</label><select id="trackingProject"></select>
+<label>Project Name</label><input id="revProjectName">
+<label>Project Type</label><select id="revProjectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
+<label>Project Start Date</label><input id="revProjectStart" type="date">
+<label>Project End Date</label><input id="revProjectEnd" type="date">
+<label>Project Hold</label><select id="revProjectHold"><option value="false">No</option><option value="true">Yes</option></select>
+<label>Project Execution / WIP Delay Reason</label><select id="revWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
+<label>Billing Done</label><select id="revBillingDone"><option value="false">No</option><option value="true">Yes</option></select>
+<label>Billing Date</label><input id="revBillingDate" type="date">
+<label>Billing Amount with Tax (INR)</label><input id="revBillingAmount" type="number" min="0" step="1">
+<label>Material Dispatch Date</label><input id="revMaterialDispatch" type="date">
+<label>Material Delivered Date</label><input id="revMaterialDelivered" type="date">
+<label>Material Collection Date</label><input id="revMaterialCollection" type="date">
 <label>Execution / WIP Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Payment Delay Reason</label><select id="editPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
@@ -325,7 +337,7 @@ function renderAdminClientSidebar(){
 }
 function renderRecords(){
  const admin=profile.role==="admin";
- const headers=["Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Project End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Material Collection Date","Execution Delay Days","Execution Delay Reason","Billing Delay Days","Billing Delay Reason","Payment Delay Days","Payment Delay Reason","Total Verified","Outstanding"];
+ const headers=["Project ID","Workflow Stage","Revision No.","Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Project End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Material Collection Date","Execution Delay Days","Execution Delay Reason","Billing Delay Days","Billing Delay Reason","Payment Delay Days","Payment Delay Reason","Total Verified","Outstanding"];
  if(admin)headers.push("CEG Service Designed");
  $("recordsHead").innerHTML="<tr>"+headers.map(h=>"<th>"+h+"</th>").join("")+"</tr>";
  const companyById=id=>companies.find(x=>x.id===id)?.company_name||"—";
@@ -339,7 +351,7 @@ function renderRecords(){
  $("recordsBody").innerHTML=rows.map(p=>{
   const cl=clients.find(x=>x.id===p.client_id)||{},v=Number(p.billing_amount_with_tax??p.project_value??0),got=paid(p.id),t=adminTracking.find(x=>x.project_id===p.id)||{};
   const d=delayInfo(p);
-  const cells=[cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",d.execution.days??"—",t.project_delay_reason||"—",d.billing.days??"—",t.billing_delay_reason||"—",d.payment.days??"—",t.payment_delay_reason||"—",money(got),money(v-got)];
+  const cells=[p.project_code||"—",p.workflow_stage==="final"?"Final Project":"Add Revision",p.revision_no||1,cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",d.execution.days??"—",t.project_delay_reason||"—",d.billing.days??"—",t.billing_delay_reason||"—",d.payment.days??"—",t.payment_delay_reason||"—",money(got),money(v-got)];
   if(admin)cells.push(t.ceg_service_designed||"—");
   return "<tr>"+cells.map(x=>"<td>"+esc(x)+"</td>").join("")+"</tr>";
  }).join("")||'<tr><td colspan="'+headers.length+'">No matching records</td></tr>';
@@ -452,6 +464,24 @@ async function saveAdminTracking(){
  const project=projects.find(p=>p.id===projectId);
  if(!project){alert("Project not found. Refresh and try again.");return}
  if(project.workflow_stage==="final"){alert("This project is already final. Reopen it through Admin review before revising.");return}
+ const projectChanges={
+  project_name:$("revProjectName").value.trim(),
+  project_type:$("revProjectType").value||null,
+  project_start_date:$("revProjectStart").value||null,
+  project_end_date:$("revProjectEnd").value||null,
+  project_hold:$("revProjectHold").value==="true",
+  wip_delay_reason:$("revWipReason").value||null,
+  billing_done:$("revBillingDone").value==="true",
+  billing_date:$("revBillingDate").value||null,
+  billing_amount_with_tax:$("revBillingAmount").value===""?null:Number($("revBillingAmount").value),
+  project_value:$("revBillingAmount").value===""?0:Number($("revBillingAmount").value),
+  material_dispatch_date:$("revMaterialDispatch").value||null,
+  material_delivered_date:$("revMaterialDelivered").value||null,
+  material_collection_date:$("revMaterialCollection").value||null
+ };
+ if(!projectChanges.project_name||!projectChanges.project_type){alert("Project Name and Project Type are required.");return}
+ const {error:projectEditError}=await db.from("projects").update(projectChanges).eq("id",projectId);
+ if(projectEditError){alert("Project details could not be revised: "+projectEditError.message);return}
  const trackingPayload={
   project_id:projectId,
   project_delay_reason:$("editProjectDelayReason").value||null,
@@ -538,7 +568,26 @@ $("verifyWhatsAppOtpBtn").onclick=verifyWhatsAppOtp;
 $("signupBtn").onclick=signup;
 $("logoutBtn").onclick=logout;
 $("saveAdminTracking").onclick=saveAdminTracking;
-$("trackingProject").onchange=()=>{const t=adminTracking.find(x=>x.project_id===$("trackingProject").value)||{};$("editProjectDelayReason").value=t.project_delay_reason||"";$("editBillingDelayReason").value=t.billing_delay_reason||"";$("editPaymentDelayReason").value=t.payment_delay_reason||"";$("editCegDesigned").value=t.ceg_service_designed||"";};
+$("trackingProject").onchange=()=>{
+ const p=projects.find(x=>x.id===$("trackingProject").value)||{};
+ const t=adminTracking.find(x=>x.project_id===$("trackingProject").value)||{};
+ $("revProjectName").value=p.project_name||"";
+ $("revProjectType").value=p.project_type||"";
+ $("revProjectStart").value=p.project_start_date||"";
+ $("revProjectEnd").value=p.project_end_date||"";
+ $("revProjectHold").value=String(!!p.project_hold);
+ $("revWipReason").value=p.wip_delay_reason||"";
+ $("revBillingDone").value=String(!!p.billing_done);
+ $("revBillingDate").value=p.billing_date||"";
+ $("revBillingAmount").value=p.billing_amount_with_tax??p.project_value??"";
+ $("revMaterialDispatch").value=p.material_dispatch_date||"";
+ $("revMaterialDelivered").value=p.material_delivered_date||"";
+ $("revMaterialCollection").value=p.material_collection_date||"";
+ $("editProjectDelayReason").value=t.project_delay_reason||"";
+ $("editBillingDelayReason").value=t.billing_delay_reason||"";
+ $("editPaymentDelayReason").value=t.payment_delay_reason||"";
+ $("editCegDesigned").value=t.ceg_service_designed||"";
+};
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
 $("savePayment").onclick=addPayment;
