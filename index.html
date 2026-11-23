@@ -64,15 +64,26 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 
 <section id="staff" class="hidden">
 <div class="actions">
+<button data-toggle="companyForm">+ Add Company</button>
 <button data-toggle="clientForm">+ Add Client</button>
 <button data-toggle="projectForm">+ Add Project</button>
 <button data-toggle="paymentForm">+ Record Payment</button>
 <button id="exportBtn" class="secondary">Export Report</button>
 <button id="refreshBtn" class="secondary">Refresh</button>
 </div>
+<div id="companyForm" class="panel hidden">
+<h3>Add Company</h3>
+<label>Company Name</label><input id="newCompanyName" placeholder="Registered company name">
+<button id="saveCompany">Save Company</button>
+<button data-close="companyForm" class="secondary">Cancel</button>
+</div>
 <div id="clientForm" class="panel hidden">
 <h3>Register Client</h3>
-<label>Client Name</label><input id="clientName">
+<label>Company Name</label><select id="clientCompany"></select>
+<label>Company / Client Name</label><input id="clientName">
+<label>Category</label><select id="clientCategory">
+<option value="">Select category</option><option>Individual</option><option>Contractor Civil</option><option>Contractor Interior</option><option>Architect</option><option>Interior Designer</option><option>Builder</option><option>SCM-WS</option><option>SCM-Ret</option><option>Manufacturer</option>
+</select>
 <label>Email</label><input id="clientEmail" type="email">
 <label>Phone</label><input id="clientPhone">
 <button id="saveClient">Save Client</button>
@@ -82,7 +93,29 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <h3>Register Project</h3>
 <label>Select Client</label><select id="projectClient"></select>
 <label>Project Name</label><input id="projectName">
-<label>Agreed Project Value (₹)</label><input id="projectValue" type="number" min="1" step="0.01">
+<label>Project Type</label><select id="projectType"><option value="">Select project type</option><option>Civil</option><option>Interior Furniture</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
+<label>Project Start Date</label><input id="projectStart" type="date">
+<label>Project End Date</label><input id="projectEnd" type="date">
+<label>Project Hold</label><select id="projectHold"><option value="false">No</option><option value="true">Yes</option></select>
+<label>WIP Delay Reason</label><select id="wipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
+<label>Billing Date</label><input id="billingDate" type="date">
+<label>Billing Amount with Tax (INR, whole rupees)</label><input id="billingAmount" type="number" min="0" step="1">
+<label>Material Dispatch Date</label><input id="materialDispatch" type="date">
+<label>Material Delivered Date</label><input id="materialDelivered" type="date">
+<label>Material Collection Date</label><input id="materialCollection" type="date">
+<div id="adminProjectFields">
+<h4>Admin-only tracking</h4>
+<label>Project Delay Days</label><input id="projectDelayDays" type="number" min="0" step="1">
+<label>Project Delay Reason</label><select id="projectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>Billing Delay Days</label><input id="billingDelayDays" type="number" min="0" step="1">
+<label>Billing Delay Reason</label><select id="billingDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>Payment Delay Days</label><input id="paymentDelayDays" type="number" min="0" step="1">
+<label>Payment Delay Reason</label><select id="paymentDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>Material Collection Delay Days</label><input id="materialDelayDays" type="number" min="0" step="1">
+<label>Material Collection Delay Reason</label><select id="materialDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Others</option></select>
+<label>CEG Service Designed</label><select id="cegDesigned"><option value="">Select</option><option value="true">Yes</option><option value="false">No</option></select>
+</div>
 <button id="saveProject">Save Project</button>
 <button data-close="projectForm" class="secondary">Cancel</button>
 </div>
@@ -114,12 +147,12 @@ const SUPABASE_URL="https://wcsnpazppvuwyzohxxpx.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indj c25wYXpwcHZ1d3l6b2h4eHB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzOTc2MDgsImV4cCI6MjExMDk3MzYwOH0.kuS5I3OsPdkX9QsjznWVzaXnAiSZdmau8NmXN4tUpdI".replace(" ","");
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-let user=null,profile=null,clients=[],projects=[],payments=[];
+let user=null,profile=null,clients=[],projects=[],payments=[],companies=[];
 const staffRoles=["admin","staff"];
 const isStaff=()=>staffRoles.includes(profile?.role);
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function hideForms(){["clientForm","projectForm","paymentForm"].forEach(id=>$(id).classList.add("hidden"))}
+function hideForms(){["companyForm","clientForm","projectForm","paymentForm"].forEach(id=>$(id).classList.add("hidden"))}
 
 async function login(){
  $("message").textContent="Signing in...";
@@ -150,13 +183,14 @@ async function start(){
 }
 
 async function load(){
- const [c,p,pa]=await Promise.all([
-  db.from("clients").select("id,client_name,email,phone,user_id"),
-  db.from("projects").select("id,client_id,project_name,project_value,status"),
-  db.from("payments").select("id,project_id,amount,payment_date,payment_mode,reference_number,status").order("payment_date",{ascending:false})
+ const [c,p,pa,co]=await Promise.all([
+  db.from("clients").select("id,client_name,email,phone,user_id,company_id,client_category"),
+  db.from("projects").select("id,client_id,project_name,project_value,status,project_type,project_start_date,project_end_date,project_hold,wip_delay_reason,billing_done,billing_amount_with_tax,billing_date,payment_received_full_date,material_dispatch_date,material_delivered_date,material_collection_date"),
+  db.from("payments").select("id,project_id,amount,payment_date,payment_mode,reference_number,status").order("payment_date",{ascending:false}),
+  isStaff()&&profile.role==="admin"?db.from("companies").select("id,company_name").order("company_name"):{data:[],error:null}
  ]);
- for(const x of [c,p,pa])if(x.error){alert(x.error.message);return}
- clients=c.data||[];projects=p.data||[];payments=pa.data||[];
+ for(const x of [c,p,pa,co])if(x.error){alert(x.error.message);return}
+ clients=c.data||[];projects=p.data||[];payments=pa.data||[];companies=co.data||[];
  if(!isStaff()){
   const ids=clients.filter(x=>x.user_id===user.id).map(x=>x.id);
   projects=projects.filter(x=>ids.includes(x.client_id));
@@ -187,20 +221,34 @@ function render(){
  if(isStaff()){
   $("projectClient").innerHTML=clients.map(c=>`<option value="${c.id}">${esc(c.client_name)}</option>`).join("");
   $("paymentProject").innerHTML=projects.map(p=>`<option value="${p.id}">${esc(p.project_name)}</option>`).join("");
+  $("clientCompany").innerHTML='<option value="">Select company</option>'+companies.map(c=>`<option value="${c.id}">${esc(c.company_name)}</option>`).join("");
+  $("adminProjectFields").classList.toggle("hidden",profile.role!=="admin");
  }
+}
+async function addCompany(){
+ const name=$("newCompanyName").value.trim();
+ if(!name){alert("Enter company name");return}
+ const {error}=await db.from("companies").insert({company_name:name,created_by:user.id});
+ if(error){alert(error.message);return}
+ $("newCompanyName").value="";alert("Company saved");hideForms();await load();
 }
 async function addClient(){
  const name=$("clientName").value.trim();
- if(!name){alert("Enter client name");return}
- const {error}=await db.from("clients").insert({client_name:name,email:$("clientEmail").value.trim()||null,phone:$("clientPhone").value.trim()||null,created_by:user.id});
+ if(!name||!$("clientCategory").value){alert("Enter client name and select category");return}
+ const {error}=await db.from("clients").insert({client_name:name,company_id:$("clientCompany").value||null,client_category:$("clientCategory").value,email:$("clientEmail").value.trim()||null,phone:$("clientPhone").value.trim()||null,created_by:user.id});
  if(error){alert(error.message);return}
  alert("Client saved");hideForms();await load();
 }
 async function addProject(){
- const value=Number($("projectValue").value),name=$("projectName").value.trim();
- if(!$("projectClient").value||!name||value<=0){alert("Enter all project details");return}
- const {error}=await db.from("projects").insert({client_id:$("projectClient").value,project_name:name,project_value:value,status:"active",created_by:user.id});
+ const name=$("projectName").value.trim(),billing= $("billingAmount").value;
+ if(!$("projectClient").value||!name||!$("projectType").value){alert("Select client and project type, and enter project name");return}
+ const payload={client_id:$("projectClient").value,project_name:name,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value||null,project_end_date:$("projectEnd").value||null,project_hold:$("projectHold").value==="true",wip_delay_reason:$("wipReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,material_collection_date:$("materialCollection").value||null,status:"active",created_by:user.id};
+ const {data,error}=await db.from("projects").insert(payload).select("id").single();
  if(error){alert(error.message);return}
+ if(profile.role==="admin"){
+  const {error:adminError}=await db.from("project_admin_tracking").upsert({project_id:data.id,project_delay_days:$("projectDelayDays").value===""?null:Number($("projectDelayDays").value),project_delay_reason:$("projectDelayReason").value||null,billing_delay_days:$("billingDelayDays").value===""?null:Number($("billingDelayDays").value),billing_delay_reason:$("billingDelayReason").value||null,payment_delay_days:$("paymentDelayDays").value===""?null:Number($("paymentDelayDays").value),payment_delay_reason:$("paymentDelayReason").value||null,material_collection_delay_days:$("materialDelayDays").value===""?null:Number($("materialDelayDays").value),material_collection_delay_reason:$("materialDelayReason").value||null,ceg_service_designed:$("cegDesigned").value===""?null:$("cegDesigned").value==="true",updated_by:user.id});
+  if(adminError){alert("Project saved, but admin tracking failed: "+adminError.message);return}
+ }
  alert("Project saved");hideForms();await load();
 }
 async function addPayment(){
@@ -239,12 +287,14 @@ function exportCSV(){
 $("loginBtn").onclick=login;
 $("signupBtn").onclick=signup;
 $("logoutBtn").onclick=logout;
+$("saveCompany").onclick=addCompany;
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
 $("savePayment").onclick=addPayment;
 $("refreshBtn").onclick=load;
 $("exportBtn").onclick=exportCSV;
 $("paymentDate").value=new Date().toISOString().slice(0,10);
+if(profile?.role!=="admin")$("adminProjectFields")?.classList.add("hidden");
 document.addEventListener("click",e=>{
  const t=e.target.closest("[data-toggle]");if(t)$(t.dataset.toggle).classList.toggle("hidden");
  const c=e.target.closest("[data-close]");if(c)$(c.dataset.close).classList.add("hidden");
