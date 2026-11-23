@@ -96,7 +96,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Cheque</option><option>Other</option>
 </select>
 <label>Transaction Reference</label><input id="reference" placeholder="UTR / receipt number">
-<button id="savePayment">Save as Pending Verification</button>
+<button id="savePayment">Save Payment Record</button>
 <button data-close="paymentForm" class="secondary">Cancel</button>
 </div>
 </section>
@@ -115,7 +115,7 @@ const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 let user=null,profile=null,clients=[],projects=[],payments=[];
-const staffRoles=["super_admin","accounts","project_manager","collection_executive"];
+const staffRoles=["admin","staff"];
 const isStaff=()=>staffRoles.includes(profile?.role);
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -153,7 +153,7 @@ async function load(){
  const [c,p,pa]=await Promise.all([
   db.from("clients").select("id,client_name,email,phone,user_id"),
   db.from("projects").select("id,client_id,project_name,project_value,status"),
-  db.from("payments").select("id,project_id,amount,payment_date,payment_method,reference_number,status").order("payment_date",{ascending:false})
+  db.from("payments").select("id,project_id,amount,payment_date,payment_mode,reference_number,status").order("payment_date",{ascending:false})
  ]);
  for(const x of [c,p,pa])if(x.error){alert(x.error.message);return}
  clients=c.data||[];projects=p.data||[];payments=pa.data||[];
@@ -181,7 +181,7 @@ function render(){
  }).join(""):"<p class='muted'>No projects available.</p>";
  $("history").innerHTML=payments.length?payments.map(p=>{
   const project=projects.find(x=>x.id===p.project_id);
-  const buttons=isStaff()&&p.status==="pending_verification"?`<p><button data-verify="${p.id}" data-status="verified">Verify</button><button class="danger" data-verify="${p.id}" data-status="rejected">Reject</button></p>`:"";
+  const buttons=isStaff()&&p.status==="recorded"?`<p><button data-verify="${p.id}" data-status="verified">Verify</button><button class="danger" data-verify="${p.id}" data-status="rejected">Reject</button></p>`:"";
   return `<div class="project"><b>${money(p.amount)}</b><p>${esc(project?.project_name||"Project")} | ${esc(p.payment_date||"")}</p><p>${esc(p.payment_method||"")} | Ref: ${esc(p.reference_number||"Not provided")}</p><span class="badge">${esc(p.status)}</span>${buttons}</div>`;
  }).join(""):"<p class='muted'>No payment records yet.</p>";
  if(isStaff()){
@@ -192,14 +192,14 @@ function render(){
 async function addClient(){
  const name=$("clientName").value.trim();
  if(!name){alert("Enter client name");return}
- const {error}=await db.from("clients").insert({client_name:name,email:$("clientEmail").value.trim()||null,phone:$("clientPhone").value.trim()||null});
+ const {error}=await db.from("clients").insert({client_name:name,email:$("clientEmail").value.trim()||null,phone:$("clientPhone").value.trim()||null,created_by:user.id});
  if(error){alert(error.message);return}
  alert("Client saved");hideForms();await load();
 }
 async function addProject(){
  const value=Number($("projectValue").value),name=$("projectName").value.trim();
  if(!$("projectClient").value||!name||value<=0){alert("Enter all project details");return}
- const {error}=await db.from("projects").insert({client_id:$("projectClient").value,project_name:name,project_value:value,status:"active"});
+ const {error}=await db.from("projects").insert({client_id:$("projectClient").value,project_name:name,project_value:value,status:"active",created_by:user.id});
  if(error){alert(error.message);return}
  alert("Project saved");hideForms();await load();
 }
@@ -211,14 +211,15 @@ async function addPayment(){
   payment_date:$("paymentDate").value||new Date().toISOString().slice(0,10),
   payment_method:$("paymentMethod").value,
   reference_number:$("reference").value.trim()||null,
-  status:"pending_verification",created_by:user.id
+  status:"recorded",recorded_by:user.id
  });
  if(error){alert(error.message);return}
- alert("Payment saved as pending verification");hideForms();await load();
+ alert("Payment saved as recorded");hideForms();await load();
 }
 async function verify(id,status){
  if(!confirm("Change payment status to "+status+"?"))return;
- const {error}=await db.from("payments").update({status}).eq("id",id);
+ const updateData=status==="verified"?{status,verified_by:user.id}:{status};
+ const {error}=await db.from("payments").update(updateData).eq("id",id);
  if(error){alert(error.message);return}
  await load();
 }
