@@ -38,6 +38,13 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 .status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:bold;margin:3px}
 .green{background:#e4f5ec;color:#187449}.yellow{background:#fff4d6;color:#946200}.red{background:#fff0ef;color:#bd3939}.neutral{background:#edf1f6;color:#526276}
 @media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
+
+.table-wrap{overflow-x:auto;background:#fff;border-radius:10px;margin:10px 0;box-shadow:0 2px 8px #0001}
+#recordsTable{border-collapse:collapse;width:100%;min-width:1450px;font-size:12px}
+#recordsTable th,#recordsTable td{border:1px solid #e1e8f0;padding:9px 10px;text-align:left;white-space:nowrap}
+#recordsTable th{background:#eaf1fa;color:#173d6b;position:sticky;top:0;z-index:1}
+.filters{display:grid;grid-template-columns:repeat(2,minmax(130px,1fr));gap:8px}
+@media(min-width:700px){.filters{grid-template-columns:repeat(5,minmax(130px,1fr))}}
 </style>
 </head>
 <body>
@@ -158,6 +165,21 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <h3>Registered Clients</h3><div id="clientList"><p class="muted">No clients registered yet.</p></div>
 </section>
 
+
+<h3>All Records — Excel View</h3>
+<div class="panel">
+ <div class="filters">
+  <input id="recordSearch" placeholder="Search client / project">
+  <select id="filterCompany"><option value="">All Companies</option></select>
+  <select id="filterClient"><option value="">All Clients</option></select>
+  <select id="filterCategory"><option value="">All Client Types</option></select>
+  <select id="filterProjectType"><option value="">All Project Types</option></select>
+  <select id="filterHold"><option value="">Hold: All</option><option value="true">On Hold</option><option value="false">Not on Hold</option></select>
+ </div>
+ <p class="muted" id="recordCount"></p>
+ <div class="table-wrap"><table id="recordsTable"><thead id="recordsHead"></thead><tbody id="recordsBody"></tbody></table></div>
+</div>
+
 <h3>Projects</h3><div id="projects"></div>
 <h3>Payment History</h3><div id="history"></div>
 <p id="clientHelp" class="notice hidden">Your account is not yet linked to a client record. Contact your CEG administrator.</p>
@@ -241,6 +263,35 @@ function delayClass(days,greenAllowed=false){
  if(n<=15)return "yellow";
  return "red";
 }
+
+function renderRecords(){
+ const admin=profile.role==="admin";
+ const headers=["Client Name","Client Type","Company","Project Name","Project Type","Project Start Date","Project End Date","Project Hold","WIP Delay Reason","Billing Done","Billing Date","Billing Amount","Material Dispatch Date","Material Delivered Date","Material Collection Date","Total Verified","Outstanding"];
+ if(admin)headers.push("Project Delay Days","Project Delay Reason","Billing Delay Days","Billing Delay Reason","Payment Delay Days","Payment Delay Reason","Material Collection Delay Days","Material Collection Delay Reason","CEG Service Designed");
+ $("recordsHead").innerHTML="<tr>"+headers.map(h=>"<th>"+h+"</th>").join("")+"</tr>";
+ const companyById=id=>companies.find(x=>x.id===id)?.company_name||"—";
+ const q=$("recordSearch").value.trim().toLowerCase(),fc=$("filterCompany").value,fl=$("filterClient").value,fg=$("filterCategory").value,ft=$("filterProjectType").value,fh=$("filterHold").value;
+ const rows=projects.filter(p=>{
+  const cl=clients.find(x=>x.id===p.client_id)||{},co=companyById(cl.company_id);
+  const search=[cl.client_name,cl.email,p.project_name,p.project_type,co].join(" ").toLowerCase();
+  return (!q||search.includes(q))&&(!fc||cl.company_id===fc)&&(!fl||p.client_id===fl)&&(!fg||(cl.client_category||"")===fg)&&(!ft||(p.project_type||"")===ft)&&(!fh||String(!!p.project_hold)===fh);
+ });
+ $("recordCount").textContent=rows.length+" records shown";
+ $("recordsBody").innerHTML=rows.map(p=>{
+  const cl=clients.find(x=>x.id===p.client_id)||{},v=Number(p.billing_amount_with_tax??p.project_value??0),got=paid(p.id),t=adminTracking.find(x=>x.project_id===p.id)||{};
+  const cells=[cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",money(got),money(v-got)];
+  if(admin)cells.push(t.project_delay_days??"—",t.project_delay_reason||"—",t.billing_delay_days??"—",t.billing_delay_reason||"—",t.payment_delay_days??"—",t.payment_delay_reason||"—",t.material_collection_delay_days??"—",t.material_collection_delay_reason||"—",t.ceg_service_designed===true?"Yes":t.ceg_service_designed===false?"No":"—");
+  return "<tr>"+cells.map(x=>"<td>"+esc(x)+"</td>").join("")+"</tr>";
+ }).join("")||'<tr><td colspan="'+headers.length+'">No matching records</td></tr>';
+}
+function setupRecordFilters(){
+ const fill=(id,items,placeholder)=>{const el=$(id),old=el.value;el.innerHTML='<option value="">'+placeholder+'</option>'+items.map(x=>'<option value="'+esc(x.value)+'">'+esc(x.label)+'</option>').join("");if(items.some(x=>x.value===old))el.value=old;};
+ fill("filterCompany",companies.map(x=>({value:x.id,label:x.company_name})),"All Companies");
+ fill("filterClient",clients.map(x=>({value:x.id,label:x.client_name})),"All Clients");
+ fill("filterCategory",[...new Set(clients.map(x=>x.client_category).filter(Boolean))].map(x=>({value:x,label:x})),"All Client Types");
+ fill("filterProjectType",[...new Set(projects.map(x=>x.project_type).filter(Boolean))].map(x=>({value:x,label:x})),"All Project Types");
+}
+
 function render(){
  const total=projects.reduce((s,p)=>s+Number(p.project_value||0),0);
  const collected=projects.reduce((s,p)=>s+paid(p.id),0);
@@ -270,6 +321,7 @@ function render(){
   const badge=(label,days,cls)=>days===null||days===undefined?"":`<span class="status ${cls}">${label}: ${days} days</span>`;
   return `<div class="project"><b>${esc(p.project_name)}</b><p>Client: ${esc(c?.client_name||"Client")} | Type: ${esc(p.project_type||"—")}</p><p>Start: ${esc(p.project_start_date||"—")} | End: ${esc(p.project_end_date||"—")} | Hold: ${p.project_hold?"Yes":"No"}</p><p>Billing: ${p.billing_done?"Done":"Pending"} | Bill incl. tax: ${money(p.billing_amount_with_tax)} | Full collection: ${esc(fullDate||"Pending")}</p>${profile.role==="admin"?badge("Project delay",t.project_delay_days,projectStatus)+badge("Material collection",t.material_collection_delay_days,materialStatus)+badge("Billing to collection",billDays,billStatus):""}<p>Value: ${money(v)} | Verified: ${money(got)} | Outstanding: ${money(v-got)}</p><div style="height:7px;background:#e8edf4;border-radius:8px"><div style="height:7px;width:${percent}%;background:#21845b;border-radius:8px"></div></div></div>`;
  }).join(""):"<p class='muted'>No projects available.</p>";
+ setupRecordFilters();renderRecords();
  $("clientList").innerHTML=clients.length?clients.map(c=>{const company=companies.find(x=>x.id===c.company_id);return `<div class="project"><b>${esc(c.client_name)}</b><p>Company: ${esc(company?.company_name||"Not linked")} | Category: ${esc(c.client_category||"—")}</p><p>${esc(c.email||"")} ${c.phone?"| "+esc(c.phone):""}</p></div>`}).join(""):"<p class='muted'>No clients registered yet.</p>";
  $("history").innerHTML=payments.length?payments.map(p=>{
   const project=projects.find(x=>x.id===p.project_id);
@@ -370,6 +422,8 @@ $("saveProject").onclick=addProject;
 $("savePayment").onclick=addPayment;
 $("refreshBtn").onclick=load;
 $("exportBtn").onclick=exportCSV;
+
+["recordSearch","filterCompany","filterClient","filterCategory","filterProjectType","filterHold"].forEach(id=>$(id).addEventListener("input",renderRecords));
 $("paymentDate").value=new Date().toISOString().slice(0,10);
 if(profile?.role!=="admin")$("adminProjectFields")?.classList.add("hidden");
 document.addEventListener("click",e=>{
