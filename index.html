@@ -109,6 +109,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <section id="adminClientWorkspace" class="panel hidden">
 <div class="client-tabbar admin-workspace-tabs">
  <button type="button" class="client-tab active" data-admin-tab="adminSubmissionsPanel">Client Submissions</button>
+ <button type="button" class="client-tab" data-admin-tab="adminSummaryPanel">18-Column Summary</button>
  <button type="button" class="client-tab" data-admin-tab="adminReportsPanel">Reports</button>
 </div>
 <section id="adminSubmissionsPanel" class="client-project-tab">
@@ -116,6 +117,12 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
  <p class="muted">Open a client-submitted Project ID to review and edit the original filled project template. Changes stay on the same project record.</p>
  <div id="adminSubmissionList"></div>
  <div id="adminProjectFormHost"></div>
+</section>
+<section id="adminSummaryPanel" class="client-project-tab hidden">
+ <h3>18-Column Project Summary</h3><p class="muted">All active projects · Select Edit to update the original project record. Delete removes it from active Client and Admin lists.</p>
+ <div class="table-wrap project-summary-scroll"><table id="adminProjectSummaryTable"><thead><tr>
+ <th>Company Name</th><th>Project ID</th><th>CEG Date</th><th>Project Name</th><th>Project Type</th><th>Project Start Date</th><th>Expected Project End Date</th><th>Actual Project End Date</th><th>Project Execution / WIP Delay Reason</th><th>Billing Date</th><th>Billing Amount with Tax</th><th>Payment Date</th><th>Payment Amount</th><th>Service Details</th><th>Execution Delay (Days)</th><th>Billing Delay (Days)</th><th>Payment Delay (Days)</th><th>Delete</th>
+ </tr></thead><tbody id="adminProjectSummaryRows"><tr><td colspan="18" class="muted">Loading projects…</td></tr></tbody></table></div>
 </section>
 <section id="adminReportsPanel" class="client-project-tab hidden">
  <h3>Final Project Reports</h3>
@@ -411,7 +418,7 @@ async function load(){
   $("clientHelp").classList.toggle("hidden",clients.length>0);
  }
  render();
- if(isAdmin()){renderAdminClientSubmissions();renderAdminReportStats();}
+ if(isAdmin()){renderAdminClientSubmissions();renderAdminProjectSummary();renderAdminReportStats();}
  return true;
 }
 function paid(id){return payments.filter(p=>p.project_id===id&&p.status==="verified").reduce((s,p)=>s+Number(p.amount),0)}
@@ -488,6 +495,25 @@ function renderAdminClientSubmissions(){
   return '<article class="project admin-submission-card"><div class="row"><b>'+esc(p.project_code||p.id)+'</b><span class="status '+(p.workflow_stage==="final"?"green":"yellow")+'">'+esc(stage)+'</span></div><p><b>Client:</b> '+esc(client.client_name||"—")+(company?' · '+esc(company):'')+'</p><p><b>Project:</b> '+esc(p.project_name||"—")+' · '+esc(p.project_type||"Type not selected")+'</p><p><b>Project ID:</b> '+esc(p.id)+'</p><button type="button" data-open-client-submission="'+esc(p.id)+'">Open Filled Project</button></article>';
  }).join(""):'<div class="notice">No client-submitted projects found.</div>';
 }
+function renderAdminProjectSummary(){
+ if(!isAdmin())return;
+ const body=$("adminProjectSummaryRows");if(!body)return;
+ const today=new Date().toISOString().slice(0,10);
+ const rows=projects.filter(p=>!p.deleted_at).slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+ if(!rows.length){body.innerHTML='<tr><td colspan="18" class="muted">No active projects available.</td></tr>';return;}
+ body.innerHTML=rows.map(p=>{
+  const c=clients.find(x=>x.id===p.client_id)||{},company=companies.find(x=>x.id===c.company_id)||{};
+  const pe=payments.filter(x=>x.project_id===p.id).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||"")));
+  const total=pe.reduce((sum,x)=>sum+Number(x.amount||0),0),last=pe.length?pe[pe.length-1]:null;
+  const expected=p.expected_project_end_date||null,actual=p.actual_project_end_date||p.project_end_date||null;
+  const execution=expected?dateDays(expected,actual||today):null;
+  const billing=actual?dateDays(actual,p.billing_done&&p.billing_date?p.billing_date:today):null;
+  const full=fullCollectionDate(p),target=Number(p.billing_amount_with_tax??p.project_value??0),verified=paid(p.id);
+  const payment=p.billing_date&&target>0?(full?dateDays(p.billing_date,full):verified<target?dateDays(p.billing_date,today):0):null;
+  const vals=[company.company_name||"—",p.project_code||"—",displayDate(p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—",p.service_details||"—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
+  return '<tr>'+vals.map((v,i)=>'<td>'+(i===1?'<button type="button" class="secondary" data-edit-admin-summary="'+esc(p.id)+'">Edit · '+esc(v)+'</button>':esc(v))+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>';
+ }).join("");
+}
 function closeAdminProjectEditor(){
  adminEditingClientProjectId=null;
  $("projectForm").classList.add("hidden");
@@ -501,8 +527,8 @@ function closeAdminProjectEditor(){
 function openClientSubmittedProject(projectId){
  if(!isAdmin()){alert("Only Admin can open client submissions.");return}
  const p=projects.find(x=>x.id===projectId);
- const c=clients.find(x=>x.id===p?.client_id);
- if(!p||!c||p.created_by!==c.user_id){alert("Client-submitted project could not be verified. Refresh and try again.");return}
+ if(!p){alert("Project could not be found. Refresh and try again.");return}
+ const c=clients.find(x=>x.id===p.client_id)||{};
  adminEditingClientProjectId=projectId;
  const latestPayments=payments.filter(x=>x.project_id===projectId).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||"")));
  const latest=latestPayments.length?latestPayments[latestPayments.length-1]:null;
@@ -577,7 +603,7 @@ async function saveClientSubmittedProject(publishAfterSave=false){
   }
  }
  closeAdminProjectEditor();
- alert("Client project updated. Project ID remains "+(updated.project_code||projectId)+". Workflow status and revision number were preserved.");
+ alert("Project updated. Project ID remains "+(updated.project_code||projectId)+". Workflow status and revision number were preserved.");
  await load();
  if(publishAfterSave)await finalizeProject(projectId);
 }
@@ -1127,7 +1153,8 @@ document.addEventListener("click",e=>{
   const target=adminTab.dataset.adminTab;
   document.querySelectorAll("#adminClientWorkspace .admin-workspace-tabs [data-admin-tab]").forEach(button=>button.classList.toggle("active",button===adminTab));
   document.querySelectorAll("#adminClientWorkspace .admin-workspace-panel,#adminClientWorkspace .client-project-tab").forEach(section=>section.classList.toggle("hidden",section.id!==target));
-  if(target==="adminReportsPanel")renderAdminReportStats();
+  if(target==="adminSummaryPanel")renderAdminProjectSummary();
+   if(target==="adminReportsPanel")renderAdminReportStats();
  }
  const clientTab=e.target.closest("[data-client-tab]");
  if(clientTab){
@@ -1138,6 +1165,13 @@ document.addEventListener("click",e=>{
  const companyPick=e.target.closest("[data-client-company]");
  if(companyPick){activeCompanyId=companyPick.dataset.clientCompany;renderAdminClientSidebar();$("filterCompany").value="";renderRecords();}
  const submitted=e.target.closest("[data-open-client-submission]");if(submitted)openClientSubmittedProject(submitted.dataset.openClientSubmission);
+  const summaryEdit=e.target.closest("[data-edit-admin-summary]");
+  if(summaryEdit){
+   document.querySelectorAll("#adminClientWorkspace .admin-workspace-tabs [data-admin-tab]").forEach(button=>button.classList.toggle("active",button.dataset.adminTab==="adminSubmissionsPanel"));
+   document.querySelectorAll("#adminClientWorkspace .client-project-tab").forEach(panel=>panel.classList.toggle("hidden",panel.id!=="adminSubmissionsPanel"));
+   $("adminSubmissionList").classList.remove("hidden");
+   openClientSubmittedProject(summaryEdit.dataset.editAdminSummary);
+  }
  const del=e.target.closest("[data-delete-client-project]");if(del)deleteClientProject(del.dataset.deleteClientProject);
  const gen=e.target.closest("#generateProjectCodeBtn");if(gen)generateProjectId();
  const t=e.target.closest("[data-toggle]");if(t){$(t.dataset.toggle).classList.toggle("hidden");if(t.dataset.toggle==="projectForm"&&!adminEditingClientProjectId){$("projectCegDate").value=new Date().toISOString().slice(0,10);$("projectClientNameDisplay").value=companies.find(x=>x.id===clients[0]?.company_id)?.company_name||"";}}
