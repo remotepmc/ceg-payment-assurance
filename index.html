@@ -129,7 +129,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <label>Material Collection Date</label><input id="materialCollection" type="date">
 <div id="adminProjectFields">
 <h4>Admin-only project information</h4>
-<label>CEG Service Designed</label><select id="cegDesigned"><option value="">Select</option><option value="true">Yes</option><option value="false">No</option></select>
+<label>CEG Service Designed</label><select id="cegDesigned"><option value="">Select CEG service</option><option value="Action Plan — ₹299*">Action Plan — ₹299*</option><option value="Aapka Naksha 2D — ₹999*">Aapka Naksha 2D — ₹999*</option><option value="Site Anusasan Online — ₹1,999*">Site Anusasan Online — ₹1,999*</option><option value="Sales ki Bhasha Online — ₹1,999*">Sales ki Bhasha Online — ₹1,999*</option><option value="Be Prepared Online — ₹1,999*">Be Prepared Online — ₹1,999*</option><option value="KYG — Know Your Ghar — ₹1,999*">KYG — Know Your Ghar — ₹1,999*</option><option value="KYW — Know Your Work — ₹2,999*">KYW — Know Your Work — ₹2,999*</option><option value="ANGAD — Aapka Doot — ₹4,999*">ANGAD — Aapka Doot — ₹4,999*</option><option value="Third Eye Remote PMC — ₹12,000*">Third Eye Remote PMC — ₹12,000*</option></select>
 </div>
 <button id="saveProject">Save Project</button>
 <button data-close="projectForm" class="secondary">Cancel</button>
@@ -140,7 +140,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:11px}
 <label>Execution / WIP Delay Reason</label><select id="editProjectDelayReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Billing Delay Reason</label><select id="editBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
 <label>Payment Delay Reason</label><select id="editPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option></select>
-<label>CEG Service Designed</label><select id="editCegDesigned"><option value="">Select</option><option value="true">Yes</option><option value="false">No</option></select>
+<label>CEG Service Designed</label><select id="editCegDesigned"><option value="">Select CEG service</option><option value="Action Plan — ₹299*">Action Plan — ₹299*</option><option value="Aapka Naksha 2D — ₹999*">Aapka Naksha 2D — ₹999*</option><option value="Site Anusasan Online — ₹1,999*">Site Anusasan Online — ₹1,999*</option><option value="Sales ki Bhasha Online — ₹1,999*">Sales ki Bhasha Online — ₹1,999*</option><option value="Be Prepared Online — ₹1,999*">Be Prepared Online — ₹1,999*</option><option value="KYG — Know Your Ghar — ₹1,999*">KYG — Know Your Ghar — ₹1,999*</option><option value="KYW — Know Your Work — ₹2,999*">KYW — Know Your Work — ₹2,999*</option><option value="ANGAD — Aapka Doot — ₹4,999*">ANGAD — Aapka Doot — ₹4,999*</option><option value="Third Eye Remote PMC — ₹12,000*">Third Eye Remote PMC — ₹12,000*</option></select>
 <button id="saveAdminTracking">Save Admin Tracking</button>
 <button data-close="adminTrackingForm" class="secondary">Cancel</button>
 </div>
@@ -341,7 +341,7 @@ function renderRecords(){
   const cl=clients.find(x=>x.id===p.client_id)||{},v=Number(p.billing_amount_with_tax??p.project_value??0),got=paid(p.id),t=adminTracking.find(x=>x.project_id===p.id)||{};
   const d=delayInfo(p);
   const cells=[cl.client_name||"—",cl.client_category||"—",companyById(cl.company_id),p.project_name||"—",p.project_type||"—",p.project_start_date||"—",p.project_end_date||"—",p.project_hold?"Yes":"No",p.wip_delay_reason||"—",p.billing_done?"Yes":"No",p.billing_date||"—",v?money(v):"—",p.material_dispatch_date||"—",p.material_delivered_date||"—",p.material_collection_date||"—",d.execution.days??"—",t.project_delay_reason||"—",d.billing.days??"—",t.billing_delay_reason||"—",d.payment.days??"—",t.payment_delay_reason||"—",money(got),money(v-got)];
-  if(admin)cells.push(t.ceg_service_designed===true?"Yes":t.ceg_service_designed===false?"No":"—");
+  if(admin)cells.push(t.ceg_service_designed||"—");
   return "<tr>"+cells.map(x=>"<td>"+esc(x)+"</td>").join("")+"</tr>";
  }).join("")||'<tr><td colspan="'+headers.length+'">No matching records</td></tr>';
 }
@@ -401,7 +401,7 @@ function render(){
  $("editProjectDelayReason").value=currentTracking.project_delay_reason||"";
  $("editBillingDelayReason").value=currentTracking.billing_delay_reason||"";
  $("editPaymentDelayReason").value=currentTracking.payment_delay_reason||"";
- $("editCegDesigned").value=currentTracking.ceg_service_designed===true?"true":currentTracking.ceg_service_designed===false?"false":"";
+ $("editCegDesigned").value=currentTracking.ceg_service_designed||"";
 }
 async function addClient(){
  const name=$("clientName").value.trim(),companyName=$("newCompanyName").value.trim();
@@ -438,7 +438,7 @@ async function addProject(){
  const {data,error}=await db.from("projects").insert(payload).select("id").single();
  if(error){alert(error.message);return}
  if(profile.role==="admin"){
-  const {error:adminError}=await db.from("project_admin_tracking").upsert({project_id:data.id,ceg_service_designed:$("cegDesigned").value===""?null:$("cegDesigned").value==="true",updated_by:user.id});
+  const {error:adminError}=await db.from("project_admin_tracking").upsert({project_id:data.id,ceg_service_designed:$("cegDesigned").value||null,updated_by:user.id});
   if(adminError){alert("Project saved, but admin tracking failed: "+adminError.message);return}
  }
  alert("Project saved");hideForms();await load();
@@ -450,7 +450,7 @@ async function saveAdminTracking(){
   project_delay_reason:$("editProjectDelayReason").value||null,
   billing_delay_reason:$("editBillingDelayReason").value||null,
   payment_delay_reason:$("editPaymentDelayReason").value||null,
-  ceg_service_designed:$("editCegDesigned").value===""?null:$("editCegDesigned").value==="true",updated_by:user.id
+  ceg_service_designed:$("editCegDesigned").value||null,updated_by:user.id
  });
  if(error){alert(error.message);return}
  alert("Admin tracking updated");hideForms();await load();
@@ -496,7 +496,7 @@ $("verifyWhatsAppOtpBtn").onclick=verifyWhatsAppOtp;
 $("signupBtn").onclick=signup;
 $("logoutBtn").onclick=logout;
 $("saveAdminTracking").onclick=saveAdminTracking;
-$("trackingProject").onchange=()=>{const t=adminTracking.find(x=>x.project_id===$("trackingProject").value)||{};$("editProjectDelayReason").value=t.project_delay_reason||"";$("editBillingDelayReason").value=t.billing_delay_reason||"";$("editPaymentDelayReason").value=t.payment_delay_reason||"";$("editCegDesigned").value=t.ceg_service_designed===true?"true":t.ceg_service_designed===false?"false":"";};
+$("trackingProject").onchange=()=>{const t=adminTracking.find(x=>x.project_id===$("trackingProject").value)||{};$("editProjectDelayReason").value=t.project_delay_reason||"";$("editBillingDelayReason").value=t.billing_delay_reason||"";$("editPaymentDelayReason").value=t.payment_delay_reason||"";$("editCegDesigned").value=t.ceg_service_designed||"";};
 $("saveClient").onclick=addClient;
 $("saveProject").onclick=addProject;
 $("savePayment").onclick=addPayment;
