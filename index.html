@@ -1149,25 +1149,29 @@ $("paymentDate").value=new Date().toISOString().slice(0,10);
 
 function switchAdminWorkspaceTab(target){
  const workspace=$("adminClientWorkspace");
- if(!workspace)return;
- const panel=workspace.querySelector("#"+target);
- if(!panel)return;
- workspace.querySelectorAll(".admin-workspace-tabs [data-admin-tab]").forEach(button=>{
-  const active=button.dataset.adminTab===target;
+ const allowed=["adminSubmissionsPanel","adminSummaryPanel","adminReportsPanel"];
+ if(!workspace||!allowed.includes(target))return;
+ const panel=$(target);
+ if(!panel||!workspace.contains(panel))return;
+ const buttons=workspace.querySelectorAll(".admin-workspace-tabs button[data-admin-tab]");
+ buttons.forEach(button=>{
+  const active=button.getAttribute("data-admin-tab")===target;
   button.classList.toggle("active",active);
   button.setAttribute("aria-selected",active?"true":"false");
  });
- workspace.querySelectorAll(":scope > .client-project-tab").forEach(section=>{
-  section.classList.toggle("hidden",section.id!==target);
+ allowed.forEach(id=>{
+  const section=$(id);
+  if(section)section.classList.toggle("hidden",id!==target);
  });
  if(target==="adminSummaryPanel")renderAdminProjectSummary();
  if(target==="adminReportsPanel")renderAdminReportStats();
 }
-document.querySelectorAll("#adminClientWorkspace .admin-workspace-tabs [data-admin-tab]").forEach(button=>{
- button.addEventListener("click",event=>{
+document.querySelectorAll("#adminClientWorkspace .admin-workspace-tabs button[data-admin-tab]").forEach(button=>{
+ button.onclick=function(event){
   event.preventDefault();
-  switchAdminWorkspaceTab(button.dataset.adminTab);
- });
+  event.stopPropagation();
+  switchAdminWorkspaceTab(button.getAttribute("data-admin-tab"));
+ };
 });
 document.addEventListener("click",e=>{
  const clientTab=e.target.closest("[data-client-tab]");
