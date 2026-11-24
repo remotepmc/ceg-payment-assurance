@@ -563,7 +563,7 @@ function renderAdminClientSubmissions(){
 }
 function projectSummaryHeaderHtml(){
  const headers=reportMasterRows([])[0];
- return '<tr>'+headers.map(h=>{const match=h.match(/^(\\d+)\\.\\s*(.*)$/);return '<th scope="col"><span class="summary-col-number">'+(match?match[1].padStart(2,'0'):'')+'</span><span class="summary-col-name">'+esc(match?match[2]:h)+'</span></th>';}).join('')+'<th scope="col"><span class="summary-col-name">Delete</span></th></tr>';
+ return '<tr>'+headers.map(h=>{const match=h.match(/^(\d+)\.\s*(.*)$/);return '<th scope="col"><span class="summary-col-number">'+(match?match[1].padStart(2,'0'):'')+'</span><span class="summary-col-name">'+esc(match?match[2]:h)+'</span></th>';}).join('')+'<th scope="col"><span class="summary-col-name">Delete</span></th></tr>';
 }
 function projectSummaryDataRow(p){return reportMasterRows([p])[1]||Array(35).fill("");}
 function renderAdminProjectSummary(){
