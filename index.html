@@ -144,7 +144,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 </section>
 <section id="adminReportsPanel" class="client-project-tab hidden">
  <h3>Final Project Reports</h3>
- <p class="muted">Reports are generated from the latest saved database records. Only Admin-published Final Projects are included.</p>
+ <p class="muted">Publish a reviewed project below to include its latest saved data in Final Project Reports and export files.</p><section class="form-section"><h4>Projects Ready to Publish</h4><div id="adminPublishQueue"><p class="muted">Loading unpublished projects…</p></div></section>
  <section class="performance-dashboard" id="adminPerformanceDashboard">
   <h3>Project Performance Dashboard</h3>
   <p class="muted">Live figures from all active projects. Billing-ready aging is calculated from Expected Project End Date.</p>
@@ -166,7 +166,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <section id="staff" class="hidden">
 <div class="actions">
 <button id="addEntryBtn" data-toggle="clientForm">+ Add Entry</button>
-<button id="addProjectBtn" data-toggle="projectForm" disabled title="Complete Add Entry first">+ Add Project (locked)</button>
+<button id="addProjectBtn" data-toggle="projectForm">+ Add Project</button>
 <button id="adminTrackingBtn" data-toggle="adminTrackingForm">Add Revision</button>
 <button id="recordPaymentBtn" data-toggle="paymentForm">+ Submit / Record Payment</button>
 <button id="exportBtn" class="secondary">Export Report</button>
@@ -216,12 +216,12 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <label>19. Material Delivered Date</label><input id="materialDelivered" type="date">
 <label>20. Billing Delay Reason</label><select id="projectBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
 <label>21. Payment Delay Reason</label><select id="projectPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
-<div class="admin-only-field"><label>22. Execution in Time · Admin only</label><select id="projectExecutionInTime" disabled><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>23. Execution Delay (Days) · Admin only</label><input id="projectExecutionDelayDays" readonly><label>Execution Delay Comment</label><textarea id="projectExecutionDelayComment"></textarea></div>
-<div class="admin-only-field"><label>24. Material in Time · Admin only</label><select id="projectMaterialInTime" disabled><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>25. Material Delay (Days) · Admin only</label><input id="projectMaterialDelayDays" readonly><label>Material Delay Comment</label><textarea id="projectMaterialDelayComment"></textarea></div>
-<div class="admin-only-field"><label>26. Billing in Time · Admin only</label><select id="projectBillingInTime" disabled><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>27. Billing Delay (Days) · Admin only</label><input id="projectBillingDelayDays" readonly><label>Billing Delay Comment</label><textarea id="projectBillingDelayComment"></textarea></div>
-<div class="admin-only-field"><label>28. Payment in Time · Admin only</label><select id="projectPaymentInTime" disabled><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>29. Payment Delay (Days) · Admin only</label><input id="projectPaymentDelayDays" readonly><label>Payment Delay Comment</label><textarea id="projectPaymentDelayComment"></textarea></div>
+<div class="admin-only-field"><label>22. Execution in Time · Admin only</label><select id="projectExecutionInTime"><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>23. Execution Delay (Days) · Admin only</label><input id="projectExecutionDelayDays" type="number" step="1"><label>Execution Delay Comment</label><textarea id="projectExecutionDelayComment"></textarea></div>
+<div class="admin-only-field"><label>24. Material in Time · Admin only</label><select id="projectMaterialInTime"><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>25. Material Delay (Days) · Admin only</label><input id="projectMaterialDelayDays" type="number" step="1"><label>Material Delay Comment</label><textarea id="projectMaterialDelayComment"></textarea></div>
+<div class="admin-only-field"><label>26. Billing in Time · Admin only</label><select id="projectBillingInTime"><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>27. Billing Delay (Days) · Admin only</label><input id="projectBillingDelayDays" type="number" step="1"><label>Billing Delay Comment</label><textarea id="projectBillingDelayComment"></textarea></div>
+<div class="admin-only-field"><label>28. Payment in Time · Admin only</label><select id="projectPaymentInTime"><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>29. Payment Delay (Days) · Admin only</label><input id="projectPaymentDelayDays" type="number" step="1"><label>Payment Delay Comment</label><textarea id="projectPaymentDelayComment"></textarea></div>
 <div class="admin-only-field"><label>30. Inactive Project Amount · Admin only</label><select id="inactiveProjectAmount"><option value="false">No</option><option value="true">Yes</option></select></div>
-<div class="admin-only-field"><label>31. Inactive Project Value (₹) · Admin only</label><input id="inactiveProjectValue" type="number" readonly></div>
+<div class="admin-only-field"><label>31. Inactive Project Value (₹) · Admin only</label><input id="inactiveProjectValue" type="number" step="0.01"></div>
 <div class="admin-only-field"><label>32. Select CEG Service · Admin only</label><select id="projectServiceDetails"><option value="">Select a CEG service</option><option value="Action Plan — ₹299*">Action Plan — ₹299*</option><option value="Aapka Naksha 2D — ₹999*">Aapka Naksha 2D — ₹999*</option><option value="Site Anusasan Online — ₹1,999*">Site Anusasan Online — ₹1,999*</option><option value="Sales ki Bhasha Online — ₹1,999*">Sales ki Bhasha Online — ₹1,999*</option><option value="Be Prepared Online — ₹1,999*">Be Prepared Online — ₹1,999*</option><option value="KYG — Know Your Ghar — ₹1,999*">KYG — Know Your Ghar — ₹1,999*</option><option value="KYW — Know Your Work — ₹2,999*">KYW — Know Your Work — ₹2,999*</option><option value="ANGAD — Aapka Doot — ₹4,999*">ANGAD — Aapka Doot — ₹4,999*</option><option value="Third Eye Remote PMC — ₹12,000*">Third Eye Remote PMC — ₹12,000*</option><option value="CEGPA — ₹499*">CEGPA — ₹499*</option><option value="ANGAD Follow Up — ₹799*">ANGAD Follow Up — ₹799*</option></select></div>
 <div class="admin-only-field"><label>33. Money Leakage (₹) · Admin only</label><input id="projectMoneyLeakage" type="number" min="0" step="0.01"></div>
 <label>34. Remarks</label><textarea id="projectRemarks" placeholder="Enter project remarks"></textarea></div></div>
@@ -455,7 +455,7 @@ async function load(){
   $("clientHelp").classList.toggle("hidden",clients.length>0);
  }
  render();
- if(isAdmin()){renderAdminClientSubmissions();renderAdminProjectSummary();renderAdminReportStats();}
+ if(isAdmin()){renderAdminClientSubmissions();renderAdminProjectSummary();renderAdminPublishQueue();renderAdminReportStats();}
  return true;
 }
 function paid(id){return payments.filter(p=>p.project_id===id&&p.status==="verified").reduce((s,p)=>s+Number(p.amount),0)}
@@ -500,12 +500,10 @@ function syncMaterialDateChain(sourceId,suffix=""){
 
 function signedDateDays(from,to){if(!from||!to)return null;const a=Date.parse(String(from).slice(0,10)+"T00:00:00Z"),b=Date.parse(String(to).slice(0,10)+"T00:00:00Z");return Number.isFinite(a)&&Number.isFinite(b)?Math.round((b-a)/86400000):null}
 function buildProjectAdminMetrics(projectId){
- const actual=$("projectEnd").value||null,expected=$("expectedProjectEnd").value||null,dispatch=$("materialDispatch").value||null,delivered=$("materialDelivered").value||null,bill=$("billingDate").value||null,payment=$("projectPaymentDate").value||null;
- const execution=signedDateDays(expected,actual),material=signedDateDays(dispatch,delivered),billing=signedDateDays(actual,bill),pay=signedDateDays(bill,payment);
- const yesNo=n=>n===null?null:n<=0;
+ const metricFlag=id=>$(id).value===""?null:$(id).value==="true";
+ const metricDays=id=>$(id).value===""?null:Number($(id).value);
  const inactive=$("inactiveProjectAmount").value==="true",projectValue=$("projectApproxValue").value===""?null:Number($("projectApproxValue").value);
- $("inactiveProjectValue").value=inactive&&projectValue!==null?projectValue:"";
- return {project_id:projectId,execution_in_time:yesNo(execution),execution_delay_days:execution===null?null:Math.max(0,execution),execution_delay_comment:$("projectExecutionDelayComment").value.trim()||null,material_in_time:yesNo(material),material_delay_days:material===null?null:Math.max(0,material),material_delay_comment:$("projectMaterialDelayComment").value.trim()||null,billing_in_time:yesNo(billing),billing_delay_days:billing===null?null:Math.max(0,billing),billing_delay_comment:$("projectBillingDelayComment").value.trim()||null,payment_in_time:yesNo(pay),payment_delay_days:pay===null?null:Math.max(0,pay),payment_delay_comment:$("projectPaymentDelayComment").value.trim()||null,inactive_project_amount:inactive,inactive_project_value:inactive?projectValue:null,ceg_service_designed:$("projectServiceDetails").value||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value)};
+ return {project_id:projectId,execution_in_time:metricFlag("projectExecutionInTime"),execution_delay_days:metricDays("projectExecutionDelayDays"),execution_delay_comment:$("projectExecutionDelayComment").value.trim()||null,material_in_time:metricFlag("projectMaterialInTime"),material_delay_days:metricDays("projectMaterialDelayDays"),material_delay_comment:$("projectMaterialDelayComment").value.trim()||null,billing_in_time:metricFlag("projectBillingInTime"),billing_delay_days:metricDays("projectBillingDelayDays"),billing_delay_comment:$("projectBillingDelayComment").value.trim()||null,payment_in_time:metricFlag("projectPaymentInTime"),payment_delay_days:metricDays("projectPaymentDelayDays"),payment_delay_comment:$("projectPaymentDelayComment").value.trim()||null,inactive_project_amount:inactive,inactive_project_value:$("inactiveProjectValue").value===""?(inactive?projectValue:null):Number($("inactiveProjectValue").value),ceg_service_designed:$("projectServiceDetails").value||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value)};
 }
 function setProjectAdminMetricFields(t){
  $("projectExecutionInTime").value=t.execution_in_time===null||t.execution_in_time===undefined?"":String(t.execution_in_time);
@@ -596,17 +594,17 @@ function closeAdminProjectEditor(){
  $("adminSubmissionList").classList.remove("hidden");
 }
 function openClientSubmittedProject(projectId){
- if(!isAdmin()){alert("Only Admin can open client submissions.");return}
+ if(!isAdmin()){alert("Only Admin can edit projects.");return}
  const p=projects.find(x=>x.id===projectId);
  if(!p){alert("Project could not be found. Refresh and try again.");return}
  const c=clients.find(x=>x.id===p.client_id)||{};
  adminEditingClientProjectId=projectId;
  const latestPayments=payments.filter(x=>x.project_id===projectId).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||"")));
  const latest=latestPayments.length?latestPayments[latestPayments.length-1]:null;
- $("projectForm").querySelector("h3").textContent="Edit Client Project · "+(p.project_code||"");
+ $("projectForm").querySelector("h3").textContent="Edit Project · "+(p.project_code||"");
  $("saveProject").textContent="Save Project Changes";
- $("publishClientProjectBtn").classList.remove("hidden");
- $("projectClientAdminOnly").classList.add("hidden");
+ $("publishClientProjectBtn").classList.toggle("hidden",p.workflow_stage==="final");
+ $("projectClientAdminOnly").classList.remove("hidden");
  $("projectClient").value=p.client_id||"";
  $("projectCegDate").value=p.ceg_date|| (p.created_at?String(p.created_at).slice(0,10):"");
  $("projectLocation").value=p.project_location||"";
@@ -651,12 +649,13 @@ async function saveClientSubmittedProject(publishAfterSave=false){
  const original=projects.find(p=>p.id===projectId);
  if(!original){alert("Project not found. Refresh and try again.");return}
  const name=$("projectName").value.trim(),billing=$("billingAmount").value;
- if(!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project End Date are mandatory.");return}
+ if(!$("projectClient").value||!clients.some(c=>c.id===$("projectClient").value)||!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Select a Client and complete Project Name, Project Type, Project Start Date and Expected Project End Date.");return}
  const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value;
  const hasPayment=!!(payType||payAmount||payDate);
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter the payment amount and payment date.");return}
  const dispatchDate=$("materialDispatch").value||null,deliveredDate=$("materialDelivered").value||null;
  const changes={
+  client_id:$("projectClient").value||original.client_id,
   project_name:name,ceg_date:$("projectCegDate").value||null,project_location:$("projectLocation").value.trim()||null,execution_stage:$("projectExecutionStage").value||null,execution_stage_remarks:$("executionStageRemarks").value.trim()||null,project_execution_remarks:$("projectExecutionRemarks").value.trim()||null,client_remarks:$("projectRemarks").value.trim()||null,
   project_value:$("projectApproxValue").value===""?null:Number($("projectApproxValue").value),billing_amount_with_tax:billing===""?null:Number(billing),
   billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,
@@ -877,7 +876,7 @@ function render(){
   const badge=(label,item,reason)=>item.days===null||item.days<1?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
   const clientSubmitted=clients.some(x=>x.user_id&&x.user_id===p.created_by);
-  const adminActions=isAdmin()&&p.workflow_stage!=="final"?(clientSubmitted?`<p><button data-edit-client-project="${p.id}">Edit Client Project</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:`<p><button data-revise="${p.id}">Open Add Revision</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Approve Final Project</button></p>`):isAdmin()?`<p><button data-open-project="${p.id}">View Full Details</button></p>`:"";
+  const adminActions=isAdmin()?(p.workflow_stage!=="final"?`<p><button data-open-client-submission="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Publish & Generate Report</button></p>`:`<p><button data-open-client-submission="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button></p>`):"";
   const service=t.ceg_service_designed||"Not yet mapped by Admin";
   const legacyService=service==="Previously marked Yes";
   const serviceLabel=legacyService?"Legacy service flag — exact service name not recorded":service;
@@ -1053,7 +1052,7 @@ async function finalizeProject(projectId){
  const project=projects.find(p=>p.id===projectId);
  if(!project){alert("Project not found.");return}
  if(!project.project_start_date||!project.expected_project_end_date){alert("Cannot approve: Project Start Date and Expected Project End Date are mandatory. Add them in Add Revision first.");return}
-  if(!confirm("Approve "+project.project_code+" as a Final Project? This will move it out of Add Revision."))return;
+  if(!confirm("Publish "+project.project_code+" and include it in Final Project Reports?"))return;
  const nextRevision=Number(project.revision_no||1)+1;
  const {error}=await db.from("projects").update({
   workflow_stage:"final",revision_no:nextRevision,finalized_at:new Date().toISOString(),finalized_by:user.id
@@ -1063,7 +1062,7 @@ async function finalizeProject(projectId){
  if(fetchError){alert("Project finalised, but final snapshot could not be read: "+fetchError.message);return}
  const {error:historyError}=await db.from("project_revisions").insert({
   project_id:projectId,revision_no:nextRevision,revision_type:"finalized",
-  revision_data:{project:latest,admin_tracking:adminTracking.find(t=>t.project_id===projectId)||{}},
+  revision_data:{project:latest,admin_tracking:adminTracking.find(t=>t.project_id===projectId)||{},admin_metrics:adminMetrics.find(t=>t.project_id===projectId)||{}},
   revision_note:"Approved by Admin as Final Project",created_by:user.id
  });
  if(historyError){alert("Project finalised, but final history record failed: "+historyError.message);return}
@@ -1240,6 +1239,11 @@ async function downloadAdminCsv(){
  a.href=fileURL;a.download="CEG-Final-Project-Summary-"+data.today+".csv";a.click();window.URL.revokeObjectURL(fileURL);
  $("adminReportMessage").textContent="Generated CSV summary for "+data.finals.length+" Final Project(s).";
 }
+function renderAdminPublishQueue(){
+ const el=$("adminPublishQueue");if(!el||!isAdmin())return;
+ const pending=projects.filter(p=>p.workflow_stage!=="final"&&!p.deleted_at);
+ el.innerHTML=pending.length?pending.map(p=>`<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name||"Untitled Project")}</b><p>Revision ${Number(p.revision_no||1)} · ${esc(p.project_type||"—")}</p><div class="actions"><button type="button" data-open-client-submission="${esc(p.id)}">Review / Edit</button><button type="button" data-finalize="${esc(p.id)}">Publish & Generate Report</button></div></div>`).join(""):"<p class='muted'>All active projects have been published. No pending projects.</p>";
+}
 function renderAdminReportStats(){
  const el=$("adminReportStats");if(!el||!isAdmin())return;
  const finals=finalReportProjects(),value=finals.reduce((sum,p)=>sum+Number(p.billing_amount_with_tax??p.project_value??0),0),collection=finals.reduce((sum,p)=>sum+paid(p.id),0),cta=reportCTArows(finals).length;
@@ -1332,7 +1336,7 @@ function switchAdminWorkspaceTab(target){
  });
  try{
   if(target==="adminSummaryPanel")renderAdminProjectSummary();
-  if(target==="adminReportsPanel")renderAdminReportStats();
+  if(target==="adminReportsPanel"){renderAdminPublishQueue();renderAdminReportStats();}
  }catch(error){
   console.error("Admin tab content error:",error);
   const panel=$(target);
