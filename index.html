@@ -677,9 +677,10 @@ async function saveClientSubmittedProject(publishAfterSave=false){
   }
  }
  closeAdminProjectEditor();
- alert("Project updated. Project ID remains "+(updated.project_code||projectId)+". Workflow status and revision number were preserved.");
- await load();
- if(publishAfterSave)await finalizeProject(projectId);
+ if(!publishAfterSave)alert("Project updated. Project ID remains "+(updated.project_code||projectId)+".");
+ const refreshed=await load();
+ if(refreshed===false){if(publishAfterSave)alert("Project details were saved, but the portal could not refresh before publishing. Refresh Admin and publish the same Project ID.");return;}
+ if(publishAfterSave)await finalizeProject(projectId,true);
 }
 
 function renderAdminClientSidebar(){
@@ -1027,12 +1028,12 @@ async function saveAdminTracking(){
  alert("Revision "+nextRevision+" saved for "+project.project_code);
  $("revisionNote").value="";hideForms();await load();
 }
-async function finalizeProject(projectId){
+async function finalizeProject(projectId,skipConfirmation=false){
  if(!isAdmin()){alert("Only Admin can finalise a project.");return}
  const project=projects.find(p=>p.id===projectId);
  if(!project){alert("Project not found.");return}
  if(!project.project_start_date||!project.expected_project_end_date){alert("Cannot approve: Project Start Date and Expected Project End Date are mandatory. Add them in Add Revision first.");return}
-  if(!confirm("Publish the latest edited data for "+(project.project_code||project.project_name)+" to Admin Summary, Client Summary and Excel?"))return;
+  if(!skipConfirmation&&!confirm("Publish the latest data for "+(project.project_code||project.project_name)+" to Admin Summary, Client Summary and Excel?"))return;
  const nextRevision=Number(project.revision_no||1)+1;
  const {error}=await db.from("projects").update({
   workflow_stage:"final",revision_no:nextRevision,finalized_at:new Date().toISOString(),finalized_by:user.id
