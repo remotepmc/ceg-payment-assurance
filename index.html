@@ -475,7 +475,7 @@ function addDaysISO(start,days){if(!start)return "";const d=new Date(start+"T00:
 function durationBetween(start,end){if(!start||!end)return 0;return Math.round((Date.parse(end+"T00:00:00Z")-Date.parse(start+"T00:00:00Z"))/86400000)}
 function displayDate(iso){if(!iso)return "";const d=new Date(iso+"T00:00:00Z");return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric",timeZone:"UTC"});}
 function expectedDateOptions(start,selected=""){if(!start)return '<option value="">Select start date first</option>';return '<option value="">Select expected end date</option>'+EXPECTED_OFFSETS.map(days=>{const date=addDaysISO(start,days);const parts=date.split("-");const label=parts[2]+"-"+parts[1]+"-"+parts[0];return '<option value="'+date+'" '+(selected===date?'selected':'')+'>'+label+'</option>'}).join("")}
-function refreshExpectedDate(startId,endId,selected=null){const end=$(endId);if(!end)return;const keep=selected===null?end.value:selected;end.innerHTML=expectedDateOptions($(startId).value,keep);if(keep&&![...end.options].some(o=>o.value===keep))end.value="";}
+function refreshExpectedDate(startId,endId,selected=null){const end=$(endId);if(!end)return;const keep=selected===null?end.value:selected;end.innerHTML=expectedDateOptions($(startId).value,keep);if(keep&&![...end.options].some(o=>o.value===keep)){const option=document.createElement("option");option.value=keep;option.textContent=displayDate(keep)||keep;option.selected=true;end.appendChild(option);}}
 function calculateExpectedEnd(startId,endId){refreshExpectedDate(startId,endId);}
 function addCalendarDays(iso,days){
  if(!iso)return "";
@@ -614,7 +614,7 @@ function openClientSubmittedProject(projectId){
  $("projectExecutionStage").value=p.execution_stage||"";
   $("executionStageRemarks").value=p.execution_stage_remarks||"";
  $("projectApproxValue").value=p.project_value??"";
- $("projectType").value=p.project_type||"";
+ $("projectType").value=p.project_type||"";if(p.project_type&&$("projectType").value!==p.project_type){const savedType=document.createElement("option");savedType.value=p.project_type;savedType.textContent=p.project_type;$("projectType").appendChild(savedType);$("projectType").value=p.project_type;}
  $("projectStart").value=p.project_start_date||"";
  refreshExpectedDate("projectStart","expectedProjectEnd",p.expected_project_end_date||"");
  $("projectEnd").value=p.actual_project_end_date||p.project_end_date||"";
