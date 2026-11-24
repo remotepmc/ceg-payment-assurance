@@ -594,14 +594,14 @@ function closeAdminProjectEditor(){
  $("adminSubmissionList").classList.remove("hidden");
 }
 function openClientSubmittedProject(projectId){
- if(!isAdmin()){alert("Only Admin can open client submissions.");return}
+ if(!isAdmin()){alert("Only Admin can edit projects.");return}
  const p=projects.find(x=>x.id===projectId);
  if(!p){alert("Project could not be found. Refresh and try again.");return}
  const c=clients.find(x=>x.id===p.client_id)||{};
  adminEditingClientProjectId=projectId;
  const latestPayments=payments.filter(x=>x.project_id===projectId).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||"")));
  const latest=latestPayments.length?latestPayments[latestPayments.length-1]:null;
- $("projectForm").querySelector("h3").textContent="Edit Client Project · "+(p.project_code||"");
+ $("projectForm").querySelector("h3").textContent="Edit Project · "+(p.project_code||"");
  $("saveProject").textContent="Save Project Changes";
  $("publishClientProjectBtn").classList.remove("hidden");
  $("projectClientAdminOnly").classList.remove("hidden");
@@ -876,7 +876,7 @@ function render(){
   const badge=(label,item,reason)=>item.days===null||item.days<1?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
   const clientSubmitted=clients.some(x=>x.user_id&&x.user_id===p.created_by);
-  const adminActions=isAdmin()?(p.workflow_stage!=="final"?`<p><button data-edit-client-project="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Publish & Generate Report</button></p>`:`<p><button data-edit-client-project="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button></p>`):"";
+  const adminActions=isAdmin()?(p.workflow_stage!=="final"?`<p><button data-open-client-submission="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Publish & Generate Report</button></p>`:`<p><button data-open-client-submission="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button></p>`):"";
   const service=t.ceg_service_designed||"Not yet mapped by Admin";
   const legacyService=service==="Previously marked Yes";
   const serviceLabel=legacyService?"Legacy service flag — exact service name not recorded":service;
@@ -1052,7 +1052,7 @@ async function finalizeProject(projectId){
  const project=projects.find(p=>p.id===projectId);
  if(!project){alert("Project not found.");return}
  if(!project.project_start_date||!project.expected_project_end_date){alert("Cannot approve: Project Start Date and Expected Project End Date are mandatory. Add them in Add Revision first.");return}
-  if(!confirm("Approve "+project.project_code+" as a Final Project? This will move it out of Add Revision."))return;
+  if(!confirm("Publish "+project.project_code+" and include it in Final Project Reports?"))return;
  const nextRevision=Number(project.revision_no||1)+1;
  const {error}=await db.from("projects").update({
   workflow_stage:"final",revision_no:nextRevision,finalized_at:new Date().toISOString(),finalized_by:user.id
@@ -1062,7 +1062,7 @@ async function finalizeProject(projectId){
  if(fetchError){alert("Project finalised, but final snapshot could not be read: "+fetchError.message);return}
  const {error:historyError}=await db.from("project_revisions").insert({
   project_id:projectId,revision_no:nextRevision,revision_type:"finalized",
-  revision_data:{project:latest,admin_tracking:adminTracking.find(t=>t.project_id===projectId)||{}},
+  revision_data:{project:latest,admin_tracking:adminTracking.find(t=>t.project_id===projectId)||{},admin_metrics:adminMetrics.find(t=>t.project_id===projectId)||{}},
   revision_note:"Approved by Admin as Final Project",created_by:user.id
  });
  if(historyError){alert("Project finalised, but final history record failed: "+historyError.message);return}
@@ -1242,7 +1242,7 @@ async function downloadAdminCsv(){
 function renderAdminPublishQueue(){
  const el=$("adminPublishQueue");if(!el||!isAdmin())return;
  const pending=projects.filter(p=>p.workflow_stage!=="final"&&!p.deleted_at);
- el.innerHTML=pending.length?pending.map(p=>`<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name||"Untitled Project")}</b><p>Revision ${Number(p.revision_no||1)} · ${esc(p.project_type||"—")}</p><div class="actions"><button type="button" data-edit-client-project="${esc(p.id)}">Review / Edit</button><button type="button" data-finalize="${esc(p.id)}">Publish & Generate Report</button></div></div>`).join(""):"<p class='muted'>All active projects have been published. No pending projects.</p>";
+ el.innerHTML=pending.length?pending.map(p=>`<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name||"Untitled Project")}</b><p>Revision ${Number(p.revision_no||1)} · ${esc(p.project_type||"—")}</p><div class="actions"><button type="button" data-open-client-submission="${esc(p.id)}">Review / Edit</button><button type="button" data-finalize="${esc(p.id)}">Publish & Generate Report</button></div></div>`).join(""):"<p class='muted'>All active projects have been published. No pending projects.</p>";
 }
 function renderAdminReportStats(){
  const el=$("adminReportStats");if(!el||!isAdmin())return;
