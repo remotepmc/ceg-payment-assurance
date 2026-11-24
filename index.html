@@ -62,7 +62,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 @media(max-width:420px){.cta-grid{grid-template-columns:1fr}}
 .status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:22px;font-weight:bold;margin:3px}
 .green{background:#e4f5ec;color:#187449}.yellow{background:#fff4d6;color:#946200}.red{background:#fff0ef;color:#bd3939}.neutral{background:#edf1f6;color:#526276}
-.project-summary-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;border:1px solid #dfe7f1;border-radius:12px}.project-summary-scroll table{border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:3900px;width:max-content;font-size:18px}.project-summary-scroll th,.project-summary-scroll td{border-right:1px solid #dfe7f1;border-bottom:1px solid #dfe7f1;padding:11px 10px;white-space:normal;overflow-wrap:break-word;word-break:normal;vertical-align:top;width:112px;min-width:112px;max-width:150px;line-height:1.35}.project-summary-scroll th{background:#eaf1fa;color:#21456d;position:sticky;top:0;z-index:1;font-size:17px;font-weight:800;text-align:left}.project-summary-scroll th .summary-col-number{display:block;font-size:13px;color:#6b83a0;letter-spacing:.04em;margin-bottom:4px}.project-summary-scroll th .summary-col-name{display:block;white-space:normal;overflow-wrap:normal;word-break:normal}.project-summary-scroll td{background:#fff;overflow-wrap:anywhere}.project-summary-scroll tr:hover td{background:#f7faff}.project-summary-scroll th:last-child,.project-summary-scroll td:last-child{width:150px;min-width:150px;max-width:150px}.project-summary-scroll button{font-size:15px;padding:8px 10px;margin:2px;white-space:normal}.project-summary-scroll .summary-edit-button{background:#e6effb;color:#174c88}.project-summary-scroll .summary-delete-button{background:#fff0ef;color:#bd3939}.project-summary-help{font-size:14px;color:#718096;margin:8px 2px 0}.client-view #adminTrackingBtn,.client-view #recordPaymentBtn,.client-view #exportBtn,.client-view #refreshBtn,.client-view #projectLockNote{display:none!important}.client-view #clientProjectSummary{display:block!important}.client-view #projectClientAdminOnly{display:none!important}.client-only-project-field{display:none}.client-view .client-only-project-field{display:block}.client-view #staff>.actions #addEntryBtn,.client-view #staff>.actions #addProjectBtn{display:inline-block!important}@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
+.project-summary-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;border:1px solid #dfe7f1;border-radius:12px}.project-summary-scroll table{border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:3900px;width:max-content;font-size:18px}.project-summary-scroll th,.project-summary-scroll td{border-right:1px solid #dfe7f1;border-bottom:1px solid #dfe7f1;padding:11px 10px;white-space:normal;overflow-wrap:break-word;word-break:normal;vertical-align:top;width:112px;min-width:112px;max-width:150px;line-height:1.35}.project-summary-scroll th{background:#eaf1fa;color:#21456d;position:sticky;top:0;z-index:1;font-size:17px;font-weight:800;text-align:left}.project-summary-scroll th .summary-col-number{display:block;font-size:13px;color:#6b83a0;letter-spacing:.04em;margin-bottom:4px}.project-summary-scroll th .summary-col-name{display:block;white-space:normal;overflow-wrap:normal;word-break:normal}.project-summary-scroll td{background:#fff;overflow-wrap:anywhere}.project-summary-scroll tr:hover td{background:#f7faff}.project-summary-scroll th:last-child,.project-summary-scroll td:last-child{width:150px;min-width:150px;max-width:150px;position:sticky;right:0}.project-summary-scroll th:last-child{z-index:3;background:#eaf1fa}.project-summary-scroll td:last-child{z-index:2;background:#fff;white-space:nowrap}.project-summary-scroll button{font-size:15px;padding:8px 10px;margin:2px;white-space:normal}.project-summary-scroll .summary-edit-button{background:#e6effb;color:#174c88}.project-summary-scroll .summary-delete-button{background:#fff0ef;color:#bd3939}.project-summary-help{font-size:14px;color:#718096;margin:8px 2px 0}.client-view #adminTrackingBtn,.client-view #recordPaymentBtn,.client-view #exportBtn,.client-view #refreshBtn,.client-view #projectLockNote{display:none!important}.client-view #clientProjectSummary{display:block!important}.client-view #projectClientAdminOnly{display:none!important}.client-only-project-field{display:none}.client-view .client-only-project-field{display:block}.client-view #staff>.actions #addEntryBtn,.client-view #staff>.actions #addProjectBtn{display:inline-block!important}@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
 
 .table-wrap{overflow-x:auto;background:#fff;border-radius:10px;margin:10px 0;box-shadow:0 2px 8px #0001}
 #recordsTable{border-collapse:collapse;width:100%;min-width:1450px;font-size:24px}
@@ -440,7 +440,7 @@ async function load(){
   db.from("companies").select("id,company_name").order("company_name"),
   db.from("project_admin_tracking").select("*"),
   db.from("project_revisions").select("id,project_id,revision_no,revision_type,revision_note,created_at,created_by").order("revision_no",{ascending:true}),
-  isAdmin()?db.from("project_admin_metrics").select("*"):Promise.resolve({data:[],error:null})
+  db.from("project_admin_metrics").select("*")
  ]);
  for(const x of [c,p,pa,co,at,pr,am])if(x.error){alert(x.error.message);return false}
  clients=c.data||[];projects=(p.data||[]).filter(x=>!x.deleted_at);payments=pa.data||[];companies=co.data||[];adminTracking=at.data||[];adminMetrics=am.data||[];projectRevisions=pr.data||[];
@@ -561,15 +561,15 @@ function renderAdminClientSubmissions(){
   return '<article class="project admin-submission-card"><div class="row"><b>'+esc(p.project_code||p.id)+'</b><span class="status '+(p.workflow_stage==="final"?"green":"yellow")+'">'+esc(stage)+'</span></div><p><b>Client:</b> '+esc(client.client_name||"—")+(company?' · '+esc(company):'')+'</p><p><b>Project:</b> '+esc(p.project_name||"—")+' · '+esc(p.project_type||"Type not selected")+'</p><p><b>Project ID:</b> '+esc(p.id)+'</p><button type="button" data-open-client-submission="'+esc(p.id)+'">Open Filled Project</button></article>';
  }).join(""):'<div class="notice">No client-submitted projects found.</div>';
 }
-function projectSummaryHeaderHtml(){
+function projectSummaryHeaderHtml(includeEdit=false){
  const headers=reportMasterRows([])[0];
- return '<tr>'+headers.map(h=>{const match=h.match(/^(\d+)\.\s*(.*)$/);return '<th scope="col"><span class="summary-col-number">'+(match?match[1].padStart(2,'0'):'')+'</span><span class="summary-col-name">'+esc(match?match[2]:h)+'</span></th>';}).join('')+'<th scope="col"><span class="summary-col-name">Delete</span></th></tr>';
+ return '<tr>'+headers.map(h=>{const match=h.match(/^(\d+)\.\s*(.*)$/);return '<th scope="col"><span class="summary-col-number">'+(match?match[1].padStart(2,'0'):'')+'</span><span class="summary-col-name">'+esc(match?match[2]:h)+'</span></th>';}).join('')+'<th scope="col"><span class="summary-col-name">'+(includeEdit?'Actions':'Delete')+'</span></th></tr>';
 }
 function projectSummaryDataRow(p){return reportMasterRows([p])[1]||Array(35).fill("");}
 function renderAdminProjectSummary(){
  if(!isAdmin())return;
  const body=$("adminProjectSummaryRows"),head=$("adminProjectSummaryHead");if(!body||!head)return;
- head.innerHTML=projectSummaryHeaderHtml();
+ head.innerHTML=projectSummaryHeaderHtml(true);
  const rows=finalReportProjects();
  if(!rows.length){body.innerHTML='<tr><td colspan="36" class="muted">No final-published projects available.</td></tr>';return;}
  body.innerHTML=rows.map(p=>'<tr>'+projectSummaryDataRow(p).map(v=>'<td>'+esc(v==null||v===""?"—":v)+'</td>').join('')+'<td><button type="button" class="summary-edit-button" data-edit-admin-summary="'+esc(p.id)+'">Edit</button><button type="button" class="summary-delete-button" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>').join("");
@@ -579,7 +579,7 @@ function closeAdminProjectEditor(){
  $("projectForm").classList.add("hidden");
  $("projectForm").querySelector("h3").textContent="Add Project";
  resetClientProjectForm();
- $("saveProject").textContent="Save Project";
+ $("saveProject").textContent="Save Project";$("saveProject").classList.remove("hidden");
  $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Generate Project ID";
  $("projectClientAdminOnly").classList.remove("hidden");
  $("publishClientProjectBtn").classList.add("hidden");
@@ -594,7 +594,7 @@ function openClientSubmittedProject(projectId){
  const latestPayments=payments.filter(x=>x.project_id===projectId).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||"")));
  const latest=latestPayments.length?latestPayments[latestPayments.length-1]:null;
  $("projectForm").querySelector("h3").textContent="Edit Project · "+(p.project_code||"");
- $("saveProject").textContent="Save Project Changes";
+ $("saveProject").textContent="Save Project Changes";$("saveProject").classList.add("hidden");
  $("publishClientProjectBtn").classList.remove("hidden");$("publishClientProjectBtn").textContent=p.workflow_stage==="final"?"Save & Republish Updated Report":"Save & Publish Final Project";
  $("projectClientAdminOnly").classList.remove("hidden");
  $("projectClient").value=p.client_id||"";
@@ -1032,7 +1032,7 @@ async function finalizeProject(projectId){
  const project=projects.find(p=>p.id===projectId);
  if(!project){alert("Project not found.");return}
  if(!project.project_start_date||!project.expected_project_end_date){alert("Cannot approve: Project Start Date and Expected Project End Date are mandatory. Add them in Add Revision first.");return}
-  if(!confirm("Publish "+project.project_code+" and include it in Final Project Reports?"))return;
+  if(!confirm("Publish the latest edited data for "+(project.project_code||project.project_name)+" to Admin Summary, Client Summary and Excel?"))return;
  const nextRevision=Number(project.revision_no||1)+1;
  const {error}=await db.from("projects").update({
   workflow_stage:"final",revision_no:nextRevision,finalized_at:new Date().toISOString(),finalized_by:user.id
@@ -1354,8 +1354,7 @@ document.addEventListener("click",e=>{
  const submitted=e.target.closest("[data-open-client-submission]");if(submitted)openClientSubmittedProject(submitted.dataset.openClientSubmission);
   const summaryEdit=e.target.closest("[data-edit-admin-summary]");
   if(summaryEdit){
-   document.querySelectorAll("#adminClientWorkspace .admin-workspace-tabs [data-admin-tab]").forEach(button=>button.classList.toggle("active",button.dataset.adminTab==="adminSubmissionsPanel"));
-   document.querySelectorAll("#adminClientWorkspace .client-project-tab").forEach(panel=>panel.classList.toggle("hidden",panel.id!=="adminSubmissionsPanel"));
+   switchAdminWorkspaceTab("adminSubmissionsPanel");
    $("adminSubmissionList").classList.remove("hidden");
    openClientSubmittedProject(summaryEdit.dataset.editAdminSummary);
   }
