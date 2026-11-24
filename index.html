@@ -129,6 +129,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <div class="client-tabbar admin-workspace-tabs">
  <button type="button" class="client-tab active" data-admin-tab="adminSubmissionsPanel" aria-controls="adminSubmissionsPanel" aria-selected="true">Client Submissions</button>
  <button type="button" class="client-tab" data-admin-tab="adminSummaryPanel" aria-controls="adminSummaryPanel" aria-selected="false">Summary</button>
+ <button type="button" class="client-tab" data-admin-tab="adminRevisionPanel" aria-controls="adminRevisionPanel" aria-selected="false">Revision</button>
  <button type="button" class="client-tab" data-admin-tab="adminReportsPanel" aria-controls="adminReportsPanel" aria-selected="false">Reports</button>
 </div>
 <section id="adminSubmissionsPanel" class="client-project-tab">
@@ -141,6 +142,11 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <section id="adminSummaryPanel" class="client-project-tab hidden">
  <h3>Summary</h3><p class="muted">35 published fields · Admin can Edit, Republish or Delete.</p>
  <div class="table-wrap project-summary-scroll"><table id="adminProjectSummaryTable"><thead id="adminProjectSummaryHead"></thead><tbody id="adminProjectSummaryRows"><tr><td colspan="36" class="muted">Loading projects…</td></tr></tbody></table></div>
+</section>
+<section id="adminRevisionPanel" class="client-project-tab hidden">
+ <h3>Revision</h3><p class="muted">Edit any previously published project and republish the latest version. The original Project ID stays unchanged.</p>
+ <div id="adminRevisionFormHost"></div>
+ <div class="table-wrap"><table><thead><tr><th>Project ID</th><th>Client</th><th>Project Name</th><th>Current Revision</th><th>Action</th></tr></thead><tbody id="adminRevisionRows"><tr><td colspan="5" class="muted">Loading published projects…</td></tr></tbody></table></div>
 </section>
 <section id="adminReportsPanel" class="client-project-tab hidden">
  <h3>Final Project Reports</h3>
@@ -572,10 +578,20 @@ function projectSummaryCellsHtml(p){return projectSummaryDataRow(p).map((v,i)=>i
 function renderAdminProjectSummary(){
  if(!isAdmin())return;
  const body=$("adminProjectSummaryRows"),head=$("adminProjectSummaryHead");if(!body||!head)return;
- head.innerHTML=projectSummaryHeaderHtml(true);
+ head.innerHTML=projectSummaryHeaderHtml(false);
  const rows=finalReportProjects();
  if(!rows.length){body.innerHTML='<tr><td colspan="36" class="muted">No final-published projects available.</td></tr>';return;}
- body.innerHTML=rows.map(p=>'<tr>'+projectSummaryCellsHtml(p)+'<td><button type="button" class="summary-edit-button" data-edit-admin-summary="'+esc(p.id)+'">Edit</button><button type="button" class="summary-delete-button" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>').join("");
+ body.innerHTML=rows.map(p=>'<tr>'+projectSummaryCellsHtml(p)+'<td><button type="button" class="summary-delete-button" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>').join("");
+}
+function renderAdminRevisionList(){
+ if(!isAdmin())return;
+ const body=$("adminRevisionRows");if(!body)return;
+ const rows=finalReportProjects();
+ if(!rows.length){body.innerHTML='<tr><td colspan="5" class="muted">No published projects available.</td></tr>';return;}
+ body.innerHTML=rows.map(p=>{
+  const c=clients.find(x=>x.id===p.client_id)||{};
+  return '<tr><td>'+esc(p.project_code||"—")+'</td><td>'+esc(c.client_name||"—")+'</td><td>'+esc(p.project_name||"—")+'</td><td>'+esc(String(p.revision_no||1))+'</td><td><button type="button" class="summary-edit-button" data-edit-admin-revision="'+esc(p.id)+'">Edit & Republish</button></td></tr>';
+ }).join("");
 }
 function closeAdminProjectEditor(){
  adminEditingClientProjectId=null;
@@ -1276,8 +1292,7 @@ $("saveProject").onclick=addProject;
 $("publishClientProjectBtn").onclick=()=>{if(adminEditingClientProjectId)saveClientSubmittedProject(true);};
  document.addEventListener("input",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.id,suffix);});
  document.addEventListener("change",e=>{const el=e.target;if(!el.dataset.dateRole)return;const suffix=el.dataset.dateSuffix||"";syncMaterialDateChain(el.id,suffix);});
-  document.addEventListener("pointerdown",e=>{const end=e.target.closest("select[data-start-id]");if(end)refreshExpectedDate(end.dataset.startId,end.id,"");},true);
- document.addEventListener("focusin",e=>{const end=e.target.closest("select[data-start-id]");if(end)refreshExpectedDate(end.dataset.startId,end.id,"");});
+  // Keep saved expected-end-date selections intact when the field receives focus.
  document.addEventListener("input",e=>{const start=e.target.closest("[data-start-for]");if(start)refreshExpectedDate(start.id,start.dataset.startFor,"");});
  document.addEventListener("change",e=>{const start=e.target.closest("[data-start-for]");if(start)refreshExpectedDate(start.id,start.dataset.startFor,"");});
  $("revProjectStart").addEventListener("input",()=>refreshExpectedDate("revProjectStart","revExpectedProjectEnd",""));
@@ -1306,7 +1321,7 @@ $("downloadAdminCsvBtn").onclick=downloadAdminCsv;
 $("paymentDate").value=new Date().toISOString().slice(0,10);
 
 function switchAdminWorkspaceTab(target){
- const allowed=["adminSubmissionsPanel","adminSummaryPanel","adminReportsPanel"];
+ const allowed=["adminSubmissionsPanel","adminSummaryPanel","adminRevisionPanel","adminReportsPanel"];
  if(!allowed.includes(target))return false;
  const workspace=$("adminClientWorkspace");
  if(!workspace)return false;
@@ -1322,6 +1337,7 @@ function switchAdminWorkspaceTab(target){
  });
  try{
   if(target==="adminSummaryPanel")renderAdminProjectSummary();
+  if(target==="adminRevisionPanel")renderAdminRevisionList();
   if(target==="adminReportsPanel"){renderAdminPublishQueue();renderAdminReportStats();}
  }catch(error){
   console.error("Admin tab content error:",error);
@@ -1358,13 +1374,13 @@ document.addEventListener("click",e=>{
  const companyPick=e.target.closest("[data-client-company]");
  if(companyPick){activeCompanyId=companyPick.dataset.clientCompany;renderAdminClientSidebar();$("filterCompany").value="";renderRecords();}
  const submitted=e.target.closest("[data-open-client-submission]");if(submitted)openClientSubmittedProject(submitted.dataset.openClientSubmission);
-  const summaryEdit=e.target.closest("[data-edit-admin-summary]");
-  if(summaryEdit){
+  const revisionEdit=e.target.closest("[data-edit-admin-revision]");
+  if(revisionEdit){
    if(!adminProjectFormOriginalParent)adminProjectFormOriginalParent=$("projectForm").parentElement;
-   const summaryTable=$("adminSummaryPanel").querySelector(".table-wrap");
-   if(summaryTable)summaryTable.before($("projectForm"));else $("adminSummaryPanel").prepend($("projectForm"));
-   switchAdminWorkspaceTab("adminSummaryPanel");
-   openClientSubmittedProject(summaryEdit.dataset.editAdminSummary);
+   const revisionTable=$("adminRevisionPanel").querySelector(".table-wrap");
+   if(revisionTable)revisionTable.before($("projectForm"));else $("adminRevisionPanel").prepend($("projectForm"));
+   switchAdminWorkspaceTab("adminRevisionPanel");
+   openClientSubmittedProject(revisionEdit.dataset.editAdminRevision);
   }
  const del=e.target.closest("[data-delete-client-project]");if(del)deleteClientProject(del.dataset.deleteClientProject);
  const gen=e.target.closest("#generateProjectCodeBtn");if(gen)generateProjectId();
