@@ -559,8 +559,9 @@ function renderAdminClientSubmissions(){
  $("adminSubmissionList").innerHTML=submitted.length?submitted.map(p=>{
   const client=clients.find(c=>c.id===p.client_id)||{};
   const company=companies.find(c=>c.id===client.company_id)?.company_name||"";
-  const stage=p.workflow_stage==="final"?"Final Project":"New Project · Automatically Shared";
-  return '<article class="project admin-submission-card"><div class="row"><b>'+esc(p.project_code||p.id)+'</b><span class="status '+(p.workflow_stage==="final"?"green":"yellow")+'">'+esc(stage)+'</span></div><p><b>Client:</b> '+esc(client.client_name||"—")+(company?' · '+esc(company):'')+'</p><p><b>Project:</b> '+esc(p.project_name||"—")+' · '+esc(p.project_type||"Type not selected")+'</p><p><b>Project ID:</b> '+esc(p.id)+'</p><button type="button" data-open-client-submission="'+esc(p.id)+'">Open Filled Project</button></article>';
+  const stage=p.workflow_stage==="final"?"Final Project":"Ready for Admin Review";
+  const publishAction=p.workflow_stage==="final"?"":'<button type="button" data-finalize="'+esc(p.id)+'">Publish & Generate Report</button>';
+  return '<article class="project admin-submission-card"><div class="row"><b>'+esc(p.project_code||p.id)+'</b><span class="status '+(p.workflow_stage==="final"?"green":"yellow")+'">'+esc(stage)+'</span></div><p><b>Client:</b> '+esc(client.client_name||"—")+(company?' · '+esc(company):'')+'</p><p><b>Project:</b> '+esc(p.project_name||"—")+' · '+esc(p.project_type||"Type not selected")+'</p><p><b>Project ID:</b> '+esc(p.id)+'</p><div class="actions"><button type="button" data-open-client-submission="'+esc(p.id)+'">Open Filled Project</button>'+publishAction+'</div></article>';
  }).join(""):'<div class="notice">No client-submitted projects found.</div>';
 }
 function renderAdminProjectSummary(){
