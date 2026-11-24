@@ -138,10 +138,8 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
  <div id="adminProjectFormHost"></div>
 </section>
 <section id="adminSummaryPanel" class="client-project-tab hidden">
- <h3>18-Column Project Summary</h3><p class="muted">All active projects · Select Edit to update the original project record. Delete removes it from active Client and Admin lists.</p>
- <div class="table-wrap project-summary-scroll"><table id="adminProjectSummaryTable"><thead><tr>
- <th>Company Name</th><th>Project ID</th><th>CEG Date</th><th>Project Name</th><th>Project Type</th><th>Project Start Date</th><th>Expected Project End Date</th><th>Actual Project End Date</th><th>Project Execution</th><th>Project Execution Remarks</th><th>Billing Date</th><th>Billing Amount with Tax</th><th>Payment Date</th><th>Payment Amount</th><th>Service Details</th><th>Execution Delay (Days)</th><th>Billing Delay (Days)</th><th>Payment Delay (Days)</th><th>Delete</th>
- </tr></thead><tbody id="adminProjectSummaryRows"><tr><td colspan="18" class="muted">Loading projects…</td></tr></tbody></table></div>
+ <h3>Summary</h3><p class="muted">Final-published projects · 35 fields, followed by Delete.</p>
+ <div class="table-wrap project-summary-scroll"><table id="adminProjectSummaryTable"><thead id="adminProjectSummaryHead"></thead><tbody id="adminProjectSummaryRows"><tr><td colspan="36" class="muted">Loading projects…</td></tr></tbody></table></div>
 </section>
 <section id="adminReportsPanel" class="client-project-tab hidden">
  <h3>Final Project Reports</h3>
@@ -160,7 +158,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
   <button type="button" id="downloadAdminExcelBtn">Download Excel Report (.xlsx)</button>
   <button type="button" id="downloadAdminCsvBtn" class="secondary">Download CSV Summary</button>
  </div>
- <p id="adminReportMessage" class="notice">The report will include the 18-column project summary, full 21-field project register, project analysis, CTA follow-up and company-wise totals.</p>
+ <p id="adminReportMessage" class="notice">The Excel Summary and 35-Field Register contain the same 35 final-published fields, with matching labels and data.</p>
 </section>
 </section>
 
@@ -188,10 +186,8 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <button data-close="clientForm" class="secondary">Cancel</button>
 </div>
 <section id="clientProjectSummary" class="panel">
-<h3>My Project Summary</h3><p class="muted">One project per row. Scroll horizontally to view all 18 columns.</p>
-<div class="table-wrap project-summary-scroll"><table id="clientProjectSummaryTable"><thead><tr>
-<th>Company Name</th><th>Project ID</th><th>CEG Date</th><th>Project Name</th><th>Project Type</th><th>Project Start Date</th><th>Expected Project End Date</th><th>Actual Project End Date</th><th>Project Execution</th><th>Project Execution Remarks</th><th>Billing Date</th><th>Billing Amount with Tax</th><th>Payment Date</th><th>Payment Amount</th><th>Service Details</th><th>Execution Delay (Days)</th><th>Billing Delay (Days)</th><th>Payment Delay (Days)</th><th>Delete</th>
-</tr></thead><tbody id="clientProjectSummaryRows"><tr><td colspan="18" class="muted">No projects added yet.</td></tr></tbody></table></div></section>
+<h3>Summary</h3><p class="muted">Final-published projects · 35 fields, followed by Delete.</p>
+<div class="table-wrap project-summary-scroll"><table id="clientProjectSummaryTable"><thead id="clientProjectSummaryHead"></thead><tbody id="clientProjectSummaryRows"><tr><td colspan="36" class="muted">No final-published projects yet.</td></tr></tbody></table></div></section>
 <div id="projectForm" class="panel hidden"><h3>Add Project</h3>
 <div class="form-section"><h4>Add Project · 35 Fields</h4>
 <div id="projectClientAdminOnly"><label>Client Name</label><select id="projectClient"></select></div>
@@ -565,24 +561,18 @@ function renderAdminClientSubmissions(){
   return '<article class="project admin-submission-card"><div class="row"><b>'+esc(p.project_code||p.id)+'</b><span class="status '+(p.workflow_stage==="final"?"green":"yellow")+'">'+esc(stage)+'</span></div><p><b>Client:</b> '+esc(client.client_name||"—")+(company?' · '+esc(company):'')+'</p><p><b>Project:</b> '+esc(p.project_name||"—")+' · '+esc(p.project_type||"Type not selected")+'</p><p><b>Project ID:</b> '+esc(p.id)+'</p><button type="button" data-open-client-submission="'+esc(p.id)+'">Open Filled Project</button></article>';
  }).join(""):'<div class="notice">No client-submitted projects found.</div>';
 }
+function projectSummaryHeaderHtml(){
+ const headers=reportMasterRows([])[0];
+ return '<tr>'+headers.map(h=>'<th>'+esc(h)+'</th>').join('')+'<th>Delete</th></tr>';
+}
+function projectSummaryDataRow(p){return reportMasterRows([p])[1]||Array(35).fill("");}
 function renderAdminProjectSummary(){
  if(!isAdmin())return;
- const body=$("adminProjectSummaryRows");if(!body)return;
- const today=new Date().toISOString().slice(0,10);
- const rows=projects.filter(p=>!p.deleted_at).slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
- if(!rows.length){body.innerHTML='<tr><td colspan="18" class="muted">No active projects available.</td></tr>';return;}
- body.innerHTML=rows.map(p=>{
-  const c=clients.find(x=>x.id===p.client_id)||{},company=companies.find(x=>x.id===c.company_id)||{};
-  const pe=payments.filter(x=>x.project_id===p.id).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||"")));
-  const total=pe.reduce((sum,x)=>sum+Number(x.amount||0),0),last=pe.length?pe[pe.length-1]:null;
-  const expected=p.expected_project_end_date||null,actual=p.actual_project_end_date||p.project_end_date||null;
-  const execution=expected?dateDays(expected,actual||today):null;
-  const billing=actual?dateDays(actual,p.billing_done&&p.billing_date?p.billing_date:today):null;
-  const full=fullCollectionDate(p),target=Number(p.billing_amount_with_tax??p.project_value??0),verified=paid(p.id);
-  const payment=p.billing_date&&target>0?(full?dateDays(p.billing_date,full):verified<target?dateDays(p.billing_date,today):0):null;
-  const vals=[company.company_name||"—",p.project_code||"—",displayDate(p.ceg_date||p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",p.project_execution_remarks||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—",(adminMetrics.find(x=>x.project_id===p.id)||{}).ceg_service_designed||"—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
-  return '<tr>'+vals.map((v,i)=>'<td>'+(i===1?'<button type="button" class="secondary" data-edit-admin-summary="'+esc(p.id)+'">Edit · '+esc(v)+'</button>':esc(v))+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>';
- }).join("");
+ const body=$("adminProjectSummaryRows"),head=$("adminProjectSummaryHead");if(!body||!head)return;
+ head.innerHTML=projectSummaryHeaderHtml();
+ const rows=finalReportProjects();
+ if(!rows.length){body.innerHTML='<tr><td colspan="36" class="muted">No final-published projects available.</td></tr>';return;}
+ body.innerHTML=rows.map(p=>'<tr>'+projectSummaryDataRow(p).map(v=>'<td>'+esc(v==null||v===""?"—":v)+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>').join("");
 }
 function closeAdminProjectEditor(){
  adminEditingClientProjectId=null;
@@ -758,25 +748,13 @@ async function openAdminProject(projectId){
 }
 function projectAgingDays(from,to){return dateDays(from,to);}
 function renderClientProjectSummary(){
- const body=$("clientProjectSummaryRows");if(!body)return;
+ const body=$("clientProjectSummaryRows"),head=$("clientProjectSummaryHead");if(!body||!head)return;
  if(isAdmin()){$("clientProjectSummary").classList.add("hidden");return;}
  $("clientProjectSummary").classList.remove("hidden");
- const today=new Date().toISOString().slice(0,10);
- const rows=projects.slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
- if(!rows.length){body.innerHTML='<tr><td colspan="18" class="muted">No projects added yet.</td></tr>';return;}
- body.innerHTML=rows.map(p=>{
-  const c=clients.find(x=>x.id===p.client_id)||{};
-  const pe=payments.filter(x=>x.project_id===p.id).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||"")));
-  const total=pe.reduce((sum,x)=>sum+Number(x.amount||0),0),last=pe.length?pe[pe.length-1]:null;
-  const expected=p.expected_project_end_date||null,actual=p.actual_project_end_date||p.project_end_date||null;
-  const execution=expected?projectAgingDays(expected,actual||today):null;
-  const billing=actual?projectAgingDays(actual,p.billing_done&&p.billing_date?p.billing_date:today):null;
-  const full=fullCollectionDate(p),target=Number(p.billing_amount_with_tax??p.project_value??0),verified=paid(p.id);
-  const payment=p.billing_date&&target>0?(full?projectAgingDays(p.billing_date,full):verified<target?projectAgingDays(p.billing_date,today):0):null;
-  const company=companies.find(x=>x.id===c.company_id)||{};
-  const vals=[company.company_name||"—",p.project_code||"—",displayDate(p.ceg_date||p.created_at?.slice(0,10))||"—",p.project_name||"—",p.project_type||"—",displayDate(p.project_start_date)||"—",displayDate(expected)||"—",displayDate(actual)||"—",p.wip_delay_reason||"—",displayDate(p.billing_date)||"—",p.billing_amount_with_tax==null?"—":money(p.billing_amount_with_tax),displayDate(last?.payment_date)||"—",total?money(total):"—","—",execution===null?"—":execution,billing===null?"—":billing,payment===null?"—":payment];
-  return '<tr>'+vals.map(v=>'<td>'+esc(v)+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>';
- }).join("");
+ head.innerHTML=projectSummaryHeaderHtml();
+ const rows=finalReportProjects();
+ if(!rows.length){body.innerHTML='<tr><td colspan="36" class="muted">No final-published projects yet.</td></tr>';return;}
+ body.innerHTML=rows.map(p=>'<tr>'+projectSummaryDataRow(p).map(v=>'<td>'+esc(v==null||v===""?"—":v)+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>').join("");
 }
 async function deleteClientProject(id){
  const p=projects.find(x=>x.id===id);if(!p)return;
@@ -1143,11 +1121,11 @@ function reportCompanyRows(finals){
  return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([name,r])=>[name,r.count,r.value,r.collected,Math.max(0,r.value-r.collected),r.leakage]);
 }
 function reportMasterRows(finals){
- const headers=["1. Company Name","2. CEG Date","3. Project Name","4. Project Location","5. Project Type","6. Execution Stage","6. Execution Stage Remarks","7. Project Start Date","8. Expected Project End Date","9. Actual Project End Date","10. Project Execution","10. Project Execution Reason / Remarks","11. Approximate Project Value","12. Billing Done","13. Billing Date","14. Billing Amount with Tax","15. Payment Status","16. Payment Amount","17. Payment Date","18. Material Dispatch Date","19. Material Delivered Date","20. Billing Delay Reason","21. Payment Delay Reason","22. Execution in Time","23. Execution Delay (Days + Comment)","24. Material in Time","25. Material Delay (Days + Comment)","26. Billing in Time","27. Billing Delay (Days + Comment)","28. Payment in Time","29. Payment Deficit","30. Payment Delay (Days + Comment)","31. Inactive Project Amount","32. Inactive Project Value","33. Select CEG Service","34. Money Leakage","35. Remarks"];
+ const headers=["1. Company Name","2. CEG Date","3. Project Name","4. Project Location","5. Project Type","6. Execution Stage","7. Project Start Date","8. Expected Project End Date","9. Actual Project End Date","10. Project Execution","11. Approximate Project Value","12. Billing Done","13. Billing Date","14. Billing Amount with Tax","15. Payment Status","16. Payment Amount","17. Payment Date","18. Material Dispatch Date","19. Material Delivered Date","20. Billing Delay Reason","21. Payment Delay Reason","22. Execution in Time","23. Execution Delay (Days + Comment)","24. Material in Time","25. Material Delay (Days + Comment)","26. Billing in Time","27. Billing Delay (Days + Comment)","28. Payment in Time","29. Payment Deficit","30. Payment Delay (Days + Comment)","31. Inactive Project Amount","32. Inactive Project Value","33. Select CEG Service","34. Money Leakage","35. Remarks"];
  const rows=finals.map(p=>{
   const pe=reportPaymentRows(p),last=pe.length?pe[pe.length-1]:null,m=adminMetrics.find(x=>x.project_id===p.id)||{};
   const delay=(days,comment)=>days===null||days===undefined?"":String(days)+" day(s)"+(comment?" — "+comment:"");
-  return [reportCompany(p),p.ceg_date||(p.created_at?String(p.created_at).slice(0,10):""),p.project_name||"",p.project_location||"",p.project_type||"",p.execution_stage||"",p.execution_stage_remarks||"",p.project_start_date||"",p.expected_project_end_date||"",p.actual_project_end_date||p.project_end_date||"",p.wip_delay_reason||"",p.project_execution_remarks||"",p.project_value??"",p.billing_done?"Yes":"No",p.billing_date||"",p.billing_amount_with_tax??"",last?.payment_type||"",pe.reduce((sum,x)=>sum+Number(x.amount||0),0),last?.payment_date||"",p.material_dispatch_date||"",p.material_delivered_date||"",p.billing_delay_reason||"",p.payment_delay_reason||"",m.execution_in_time===null||m.execution_in_time===undefined?"":m.execution_in_time?"Yes":"No",delay(m.execution_delay_days,m.execution_delay_comment),m.material_in_time===null||m.material_in_time===undefined?"":m.material_in_time?"Yes":"No",delay(m.material_delay_days,m.material_delay_comment),m.billing_in_time===null||m.billing_in_time===undefined?"":m.billing_in_time?"Yes":"No",delay(m.billing_delay_days,m.billing_delay_comment),m.payment_in_time===null||m.payment_in_time===undefined?"":m.payment_in_time?"Yes":"No",m.payment_deficit||"",delay(m.payment_delay_days,m.payment_delay_comment),m.inactive_project_amount?"Yes":"No",m.inactive_project_value??"",m.ceg_service_designed||"",m.money_leakage??"",p.client_remarks||""];
+  return [reportCompany(p),p.ceg_date||(p.created_at?String(p.created_at).slice(0,10):""),p.project_name||"",p.project_location||"",p.project_type||"",p.execution_stage||"",p.project_start_date||"",p.expected_project_end_date||"",p.actual_project_end_date||p.project_end_date||"",p.wip_delay_reason||"",p.project_value??"",p.billing_done?"Yes":"No",p.billing_date||"",p.billing_amount_with_tax??"",last?.payment_type||"",pe.reduce((sum,x)=>sum+Number(x.amount||0),0),last?.payment_date||"",p.material_dispatch_date||"",p.material_delivered_date||"",p.billing_delay_reason||"",p.payment_delay_reason||"",m.execution_in_time===null||m.execution_in_time===undefined?"":m.execution_in_time?"Yes":"No",delay(m.execution_delay_days,m.execution_delay_comment),m.material_in_time===null||m.material_in_time===undefined?"":m.material_in_time?"Yes":"No",delay(m.material_delay_days,m.material_delay_comment),m.billing_in_time===null||m.billing_in_time===undefined?"":m.billing_in_time?"Yes":"No",delay(m.billing_delay_days,m.billing_delay_comment),m.payment_in_time===null||m.payment_in_time===undefined?"":m.payment_in_time?"Yes":"No",m.payment_deficit||"",delay(m.payment_delay_days,m.payment_delay_comment),m.inactive_project_amount?"Yes":"No",m.inactive_project_value??"",m.ceg_service_designed||"",m.money_leakage??"",p.client_remarks||""];
  });
  return [headers,...rows];
 }
@@ -1209,7 +1187,7 @@ function buildAdminReportData(){
  const statusRows=[["Project Status","Project Count","Share"],["WIP · On time",dashboard.status.onTime.length,dashboard.active.length?dashboard.status.onTime.length/dashboard.active.length:0],["WIP · Delayed",dashboard.status.delayed.length,dashboard.active.length?dashboard.status.delayed.length/dashboard.active.length:0],["Billing ready · Pending",dashboard.status.billingReady.length,dashboard.active.length?dashboard.status.billingReady.length/dashboard.active.length:0],["Billing completed",dashboard.status.billingDone.length,dashboard.active.length?dashboard.status.billingDone.length/dashboard.active.length:0]];
  const aging=[["Project ID","Project Name","Company","Expected Project End Date","Aging Days","Billing Amount"],...dashboard.agingRows];
  const detail=[["Company","Project ID","Project Name","Current Status","Expected Project End Date","Actual Project End Date","Days to Expected End (negative = overdue)","Billing Pending Aging Days","Billing Amount","Verified Payments","Billing vs Payments Gap"],...dashboard.detailRows];
- return {finals,today,dashboard,dashboardRows,statusRows,aging,detail,summary:[summaryHeaders,...finals.map(p=>reportSummaryRow(p,today))],master:reportMasterRows(finals),analysis:[["Company Name","Project ID","Project Name","Execution Delay (Days)","Billing Delay (Days)","Payment Delay (Days)","Project Value","Verified Collection","Outstanding","Money Leakage"],...reportAnalysisRows(finals)],cta:[["Company Name","Project ID","Project Name","CTA Category","Delay Days","Priority","Recommended Admin Action"],...reportCTArows(finals)],companies:[["Company Name","Final Projects","Project Value","Verified Collection","Outstanding","Money Leakage"],...reportCompanyRows(finals)]};
+ return {finals,today,dashboard,dashboardRows,statusRows,aging,detail,summary:reportMasterRows(finals),master:reportMasterRows(finals),analysis:[["Company Name","Project ID","Project Name","Execution Delay (Days)","Billing Delay (Days)","Payment Delay (Days)","Project Value","Verified Collection","Outstanding","Money Leakage"],...reportAnalysisRows(finals)],cta:[["Company Name","Project ID","Project Name","CTA Category","Delay Days","Priority","Recommended Admin Action"],...reportCTArows(finals)],companies:[["Company Name","Final Projects","Project Value","Verified Collection","Outstanding","Money Leakage"],...reportCompanyRows(finals)]};
 }
 function setSheetWidths(sheet,widths){sheet["!cols"]=widths.map(w=>({wch:w}));}
 async function downloadAdminExcel(){
@@ -1218,8 +1196,8 @@ async function downloadAdminExcel(){
  if(!window.XLSX){alert("Excel library did not load. Refresh the portal and try again.");return}
  const data=buildAdminReportData(),wb=XLSX.utils.book_new();
  const add=(name,rows,widths)=>{const ws=XLSX.utils.aoa_to_sheet(rows);setSheetWidths(ws,widths);XLSX.utils.book_append_sheet(wb,ws,name);};
- add("25-Column Summary",data.summary,[24,22,14,28,26,20,16,16,18,18,32,20,14,20,14,18,30,18,18,18,18,18,20,18,12]);
- add("34-Field Register",data.master,[24,14,28,28,22,16,16,18,18,32,20,14,14,20,16,18,14,18,18,26,26,16,28,16,28,16,28,16,28,20,20,30,18,30]);
+ add("35-Field Summary",data.summary,Array(35).fill(22));
+ add("35-Field Register",data.master,Array(35).fill(22));
  add("Project Analysis",data.analysis,[24,22,28,18,18,18,18,18,18,18]);
  add("CTA Follow-up",data.cta,[24,22,28,30,14,16,70]);
  add("Company Summary",data.companies,[28,16,20,20,20,20]);
