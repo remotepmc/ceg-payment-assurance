@@ -573,7 +573,7 @@ function projectSummaryHeaderHtml(includeEdit=false){
  const headers=reportMasterRows([])[0];
  return '<tr>'+headers.map(h=>{const match=h.match(/^(\d+)\.\s*(.*)$/);return '<th scope="col"><span class="summary-col-number">'+(match?match[1].padStart(2,'0'):'')+'</span><span class="summary-col-name">'+esc(match?match[2]:h)+'</span></th>';}).join('')+'<th scope="col"><span class="summary-col-name">'+(includeEdit?'Actions':'Delete')+'</span></th></tr>';
 }
-function projectSummaryDataRow(p,serialNo=1){return reportMasterRows([p])[1]||Array(37).fill("");}
+function projectSummaryDataRow(p,serialNo=1){const row=reportMasterRows([p])[1]||Array(37).fill("");row[0]=serialNo;return row;}
 function projectSummaryCellsHtml(p,serialNo=1){return projectSummaryDataRow(p,serialNo).map((v,i)=>i===36?'<td><div class="summary-remarks" title="'+esc(v==null?"":v)+'">'+esc(v==null||v===""?"—":v)+'</div></td>':'<td>'+esc(v==null||v===""?"—":v)+'</td>').join("");}
 function renderAdminProjectSummary(){
  if(!isAdmin())return;
@@ -775,7 +775,7 @@ function renderClientProjectSummary(){
  $("clientProjectSummary").classList.remove("hidden");
  head.innerHTML=projectSummaryHeaderHtml();
  const rows=finalReportProjects();
- if(!rows.length){body.innerHTML='<tr><td colspan="36" class="muted">No final-published projects yet.</td></tr>';return;}
+ if(!rows.length){body.innerHTML='<tr><td colspan="38" class="muted">No final-published projects yet.</td></tr>';return;}
  body.innerHTML=rows.map((p,i)=>'<tr>'+projectSummaryCellsHtml(p,i+1)+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>').join("");
 }
 async function deleteClientProject(id){
