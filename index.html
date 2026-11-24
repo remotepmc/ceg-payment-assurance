@@ -1013,9 +1013,14 @@ async function saveAdminTracking(){
  const {error}=await db.from("project_admin_tracking").upsert(trackingPayload);
  if(error){alert(error.message);return}
  const oldMetrics=adminMetrics.find(x=>x.project_id===projectId)||{};
- const metricUpdate={...oldMetrics,project_id:projectId,ceg_service_designed:$("editCegDesigned").value||null};delete metricUpdate.updated_at;
+ const latestPayment=payments.filter(x=>x.project_id===projectId).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||""))).at(-1);
+ const executionDiff=signedDateDays(projectChanges.expected_project_end_date,projectChanges.actual_project_end_date);
+ const materialDiff=signedDateDays(projectChanges.material_dispatch_date,projectChanges.material_delivered_date);
+ const billingDiff=signedDateDays(projectChanges.actual_project_end_date,projectChanges.billing_date);
+ const paymentDiff=signedDateDays(projectChanges.billing_date,latestPayment?.payment_date||null);
+ const metricUpdate={...oldMetrics,project_id:projectId,execution_in_time:executionDiff===null?null:executionDiff<=0,execution_delay_days:executionDiff===null?null:Math.max(0,executionDiff),material_in_time:materialDiff===null?null:materialDiff<=0,material_delay_days:materialDiff===null?null:Math.max(0,materialDiff),billing_in_time:billingDiff===null?null:billingDiff<=0,billing_delay_days:billingDiff===null?null:Math.max(0,billingDiff),payment_in_time:paymentDiff===null?null:paymentDiff<=0,payment_delay_days:paymentDiff===null?null:Math.max(0,paymentDiff),inactive_project_value:oldMetrics.inactive_project_amount?project.project_value:null,ceg_service_designed:$("editCegDesigned").value||null,updated_by:user.id};delete metricUpdate.updated_at;
  const {error:metricError}=await db.from("project_admin_metrics").upsert(metricUpdate);
- if(metricError){alert("Admin revision saved, but Admin-only service mapping failed: "+metricError.message);return}
+ if(metricError){alert("Admin revision saved, but Admin-only tracking could not be saved: "+metricError.message);return}
  if(adminClientEditProjectId===projectId){
   adminClientEditProjectId=null;
   $("adminTrackingForm").querySelector("h3").textContent="Add Revision (Admin)";
