@@ -598,6 +598,7 @@ function openClientSubmittedProject(projectId){
  $("projectForm").querySelector("h3").textContent="Edit Project · "+(p.project_code||"");
  $("saveProject").textContent="Save Project Changes";$("saveProject").classList.add("hidden");
  $("publishClientProjectBtn").classList.remove("hidden");$("publishClientProjectBtn").textContent=p.workflow_stage==="final"?"Save & Republish Updated Report":"Save & Publish Final Project";
+ const editorTitle=$("projectForm").querySelector("h3");if(editorTitle)editorTitle.after($("publishClientProjectBtn"));
  $("projectClientAdminOnly").classList.remove("hidden");
  $("projectClient").value=p.client_id||"";
  $("projectCegDate").value=p.ceg_date|| (p.created_at?String(p.created_at).slice(0,10):"");
@@ -1358,7 +1359,8 @@ document.addEventListener("click",e=>{
   const summaryEdit=e.target.closest("[data-edit-admin-summary]");
   if(summaryEdit){
    if(!adminProjectFormOriginalParent)adminProjectFormOriginalParent=$("projectForm").parentElement;
-   $("adminSummaryPanel").appendChild($("projectForm"));
+   const summaryTable=$("adminSummaryPanel").querySelector(".table-wrap");
+   if(summaryTable)summaryTable.before($("projectForm"));else $("adminSummaryPanel").prepend($("projectForm"));
    switchAdminWorkspaceTab("adminSummaryPanel");
    openClientSubmittedProject(summaryEdit.dataset.editAdminSummary);
   }
