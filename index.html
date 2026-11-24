@@ -500,12 +500,10 @@ function syncMaterialDateChain(sourceId,suffix=""){
 
 function signedDateDays(from,to){if(!from||!to)return null;const a=Date.parse(String(from).slice(0,10)+"T00:00:00Z"),b=Date.parse(String(to).slice(0,10)+"T00:00:00Z");return Number.isFinite(a)&&Number.isFinite(b)?Math.round((b-a)/86400000):null}
 function buildProjectAdminMetrics(projectId){
- const actual=$("projectEnd").value||null,expected=$("expectedProjectEnd").value||null,dispatch=$("materialDispatch").value||null,delivered=$("materialDelivered").value||null,bill=$("billingDate").value||null,payment=$("projectPaymentDate").value||null;
- const execution=signedDateDays(expected,actual),material=signedDateDays(dispatch,delivered),billing=signedDateDays(actual,bill),pay=signedDateDays(bill,payment);
- const yesNo=n=>n===null?null:n<=0;
+ const metricFlag=id=>$(id).value===""?null:$(id).value==="true";
+ const metricDays=id=>$(id).value===""?null:Number($(id).value);
  const inactive=$("inactiveProjectAmount").value==="true",projectValue=$("projectApproxValue").value===""?null:Number($("projectApproxValue").value);
- $("inactiveProjectValue").value=inactive&&projectValue!==null?projectValue:"";
- return {project_id:projectId,execution_in_time:yesNo(execution),execution_delay_days:execution===null?null:Math.max(0,execution),execution_delay_comment:$("projectExecutionDelayComment").value.trim()||null,material_in_time:yesNo(material),material_delay_days:material===null?null:Math.max(0,material),material_delay_comment:$("projectMaterialDelayComment").value.trim()||null,billing_in_time:yesNo(billing),billing_delay_days:billing===null?null:Math.max(0,billing),billing_delay_comment:$("projectBillingDelayComment").value.trim()||null,payment_in_time:yesNo(pay),payment_delay_days:pay===null?null:Math.max(0,pay),payment_delay_comment:$("projectPaymentDelayComment").value.trim()||null,inactive_project_amount:inactive,inactive_project_value:inactive?projectValue:null,ceg_service_designed:$("projectServiceDetails").value||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value)};
+ return {project_id:projectId,execution_in_time:metricFlag("projectExecutionInTime"),execution_delay_days:metricDays("projectExecutionDelayDays"),execution_delay_comment:$("projectExecutionDelayComment").value.trim()||null,material_in_time:metricFlag("projectMaterialInTime"),material_delay_days:metricDays("projectMaterialDelayDays"),material_delay_comment:$("projectMaterialDelayComment").value.trim()||null,billing_in_time:metricFlag("projectBillingInTime"),billing_delay_days:metricDays("projectBillingDelayDays"),billing_delay_comment:$("projectBillingDelayComment").value.trim()||null,payment_in_time:metricFlag("projectPaymentInTime"),payment_delay_days:metricDays("projectPaymentDelayDays"),payment_delay_comment:$("projectPaymentDelayComment").value.trim()||null,inactive_project_amount:inactive,inactive_project_value:$("inactiveProjectValue").value===""?(inactive?projectValue:null):Number($("inactiveProjectValue").value),ceg_service_designed:$("projectServiceDetails").value||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value)};
 }
 function setProjectAdminMetricFields(t){
  $("projectExecutionInTime").value=t.execution_in_time===null||t.execution_in_time===undefined?"":String(t.execution_in_time);
@@ -1239,6 +1237,11 @@ async function downloadAdminCsv(){
  const fileURL=window.URL.createObjectURL(blob),a=document.createElement("a");
  a.href=fileURL;a.download="CEG-Final-Project-Summary-"+data.today+".csv";a.click();window.URL.revokeObjectURL(fileURL);
  $("adminReportMessage").textContent="Generated CSV summary for "+data.finals.length+" Final Project(s).";
+}
+function renderAdminPublishQueue(){
+ const el=$("adminPublishQueue");if(!el||!isAdmin())return;
+ const pending=projects.filter(p=>p.workflow_stage!=="final"&&!p.deleted_at);
+ el.innerHTML=pending.length?pending.map(p=>`<div class="project"><b>${esc(p.project_code||"Project ID pending")} — ${esc(p.project_name||"Untitled Project")}</b><p>Revision ${Number(p.revision_no||1)} · ${esc(p.project_type||"—")}</p><div class="actions"><button type="button" data-edit-client-project="${esc(p.id)}">Review / Edit</button><button type="button" data-finalize="${esc(p.id)}">Publish & Generate Report</button></div></div>`).join(""):"<p class='muted'>All active projects have been published. No pending projects.</p>";
 }
 function renderAdminReportStats(){
  const el=$("adminReportStats");if(!el||!isAdmin())return;
