@@ -192,30 +192,39 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <th>Company Name</th><th>Project ID</th><th>CEG Date</th><th>Project Name</th><th>Project Type</th><th>Project Start Date</th><th>Expected Project End Date</th><th>Actual Project End Date</th><th>Project Execution / WIP Delay Reason</th><th>Billing Date</th><th>Billing Amount with Tax</th><th>Payment Date</th><th>Payment Amount</th><th>Service Details</th><th>Execution Delay (Days)</th><th>Billing Delay (Days)</th><th>Payment Delay (Days)</th><th>Delete</th>
 </tr></thead><tbody id="clientProjectSummaryRows"><tr><td colspan="18" class="muted">No projects added yet.</td></tr></tbody></table></div></section>
 <div id="projectForm" class="panel hidden"><h3>Add Project</h3>
-<div class="form-section"><h4>Add Project · 21 Fields</h4>
+<div class="form-section"><h4>Add Project · 34 Fields</h4>
 <div id="projectClientAdminOnly"><label>Client Name</label><select id="projectClient"></select></div>
 <div class="client-only-project-field"><label>1. Company Name</label><input id="projectClientNameDisplay" readonly></div>
 <label>2. CEG Date *</label><input id="projectCegDate" type="date" required>
 <label>3. Project Name *</label><input id="projectName" placeholder="Enter project name">
 <button type="button" id="generateProjectCodeBtn" class="secondary">Generate Project ID</button><p id="projectCodePreview" class="notice hidden"></p>
-<label>4. Project Type *</label><select id="projectType"><option value="">Select project type</option><option>Civil - Footing and Plinth</option><option>Civil - Structure upto Slab</option><option>Civil - Slab</option><option>Civil - Brick work super structure</option><option>Civil - Plastering Tiles</option><option>Civil - Door Window Gril Glass</option><option>Civil - MEP</option><option>Civil - Pain and Finish</option><option>Interior - plywood work</option><option>Interior - lamination</option><option>Interior - hardware fitting</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
-<label>5. Project Start Date *</label><input id="projectStart" type="date" required data-start-for="expectedProjectEnd">
-<label>6. Expected Project End Date *</label><select id="expectedProjectEnd" required data-start-id="projectStart"><option value="">Select start date first</option></select>
-<label>7. Actual Project End Date</label><input id="projectEnd" type="date">
-<label>8. Project Execution / WIP Delay Reason</label><select id="projectWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
-<label>9. Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
-<label>10. Billing Date</label><input id="billingDate" type="date">
-<label>11. Billing Amount with Tax (₹)</label><input id="billingAmount" type="number" min="0" step="1">
-<label>12. Payment Status</label><select id="projectPaymentType"><option value="">Select payment status</option><option value="Full">Full</option><option value="Part">Part</option></select>
-<label>13. Payment Amount (₹)</label><input id="projectPaymentAmount" type="number" min="0" step="0.01">
-<label>14. Payment Date</label><input id="projectPaymentDate" type="date">
-<label>15. Material Dispatch Date</label><input id="materialDispatch" type="date">
-<label>16. Material Delivered Date</label><input id="materialDelivered" type="date">
-<label>17. Billing Delay Reason</label><select id="projectBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
-<label>18. Payment Delay Reason</label><select id="projectPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
-<div class="admin-only-field"><label>19. Select CEG Service (with price) · Admin only</label><select id="projectServiceDetails"><option value="">Select a CEG service</option><option value="Action Plan — ₹299*">Action Plan — ₹299*</option><option value="Aapka Naksha 2D — ₹999*">Aapka Naksha 2D — ₹999*</option><option value="Site Anusasan Online — ₹1,999*">Site Anusasan Online — ₹1,999*</option><option value="Sales ki Bhasha Online — ₹1,999*">Sales ki Bhasha Online — ₹1,999*</option><option value="Be Prepared Online — ₹1,999*">Be Prepared Online — ₹1,999*</option><option value="KYG — Know Your Ghar — ₹1,999*">KYG — Know Your Ghar — ₹1,999*</option><option value="KYW — Know Your Work — ₹2,999*">KYW — Know Your Work — ₹2,999*</option><option value="ANGAD — Aapka Doot — ₹4,999*">ANGAD — Aapka Doot — ₹4,999*</option><option value="Third Eye Remote PMC — ₹12,000*">Third Eye Remote PMC — ₹12,000*</option><option value="CEGPA — ₹499*">CEGPA — ₹499*</option><option value="ANGAD Follow Up — ₹799*">ANGAD Follow Up — ₹799*</option></select></div>
-<div class="admin-only-field"><label>20. Money Leakage (₹) · Admin only</label><input id="projectMoneyLeakage" type="number" min="0" step="0.01"></div>
-<label>21. Remarks</label><textarea id="projectRemarks" placeholder="Enter project remarks"></textarea></div>
+<label>4. Project Location</label><textarea id="projectLocation" placeholder="Enter project location"></textarea>
+<label>5. Project Type *</label><select id="projectType"><option value="">Select project type</option><option>Civil - Footing and Plinth</option><option>Civil - Structure upto Slab</option><option>Civil - Slab</option><option>Civil - Brick work super structure</option><option>Civil - Plastering Tiles</option><option>Civil - Door Window Gril Glass</option><option>Civil - MEP</option><option>Civil - Pain and Finish</option><option>Interior - plywood work</option><option>Interior - lamination</option><option>Interior - hardware fitting</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option></select>
+<label>6. Execution Stage</label><select id="projectExecutionStage"><option value="">Select execution stage</option><option>WIP</option><option>Delay</option><option>Hold</option></select>
+<label>7. Project Start Date *</label><input id="projectStart" type="date" required data-start-for="expectedProjectEnd">
+<label>8. Expected Project End Date *</label><select id="expectedProjectEnd" required data-start-id="projectStart"><option value="">Select start date first</option></select>
+<label>9. Actual Project End Date</label><input id="projectEnd" type="date">
+<label>10. Project Execution / WIP Delay Reason</label><select id="projectWipReason"><option value="">Select reason</option><option>Quality Issue</option><option>Material Delay</option><option>Design Change</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
+<label>11. Approximate Project Value (₹)</label><input id="projectApproxValue" type="number" min="0" step="0.01" placeholder="Enter approximate project value">
+<label>12. Billing Done</label><select id="billingDone"><option value="false">No</option><option value="true">Yes</option></select>
+<label>13. Billing Date</label><input id="billingDate" type="date">
+<label>14. Billing Amount with Tax (₹)</label><input id="billingAmount" type="number" min="0" step="0.01">
+<label>15. Payment Status</label><select id="projectPaymentType"><option value="">Select payment status</option><option value="Full">Full</option><option value="Part">Part</option></select>
+<label>16. Payment Amount (₹)</label><input id="projectPaymentAmount" type="number" min="0" step="0.01">
+<label>17. Payment Date</label><input id="projectPaymentDate" type="date">
+<label>18. Material Dispatch Date</label><input id="materialDispatch" type="date">
+<label>19. Material Delivered Date</label><input id="materialDelivered" type="date">
+<label>20. Billing Delay Reason</label><select id="projectBillingDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
+<label>21. Payment Delay Reason</label><select id="projectPaymentDelayReason"><option value="">Select reason</option><option>Client asking for more time</option><option>Follow-up not done</option><option>Dispute / Serious issue</option><option>NA</option></select>
+<div class="admin-only-field"><label>22. Execution in Time · Admin only</label><select id="projectExecutionInTime" disabled><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>23. Execution Delay (Days) · Admin only</label><input id="projectExecutionDelayDays" readonly><label>Execution Delay Comment</label><textarea id="projectExecutionDelayComment"></textarea></div>
+<div class="admin-only-field"><label>24. Material in Time · Admin only</label><select id="projectMaterialInTime" disabled><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>25. Material Delay (Days) · Admin only</label><input id="projectMaterialDelayDays" readonly><label>Material Delay Comment</label><textarea id="projectMaterialDelayComment"></textarea></div>
+<div class="admin-only-field"><label>26. Billing in Time · Admin only</label><select id="projectBillingInTime" disabled><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>27. Billing Delay (Days) · Admin only</label><input id="projectBillingDelayDays" readonly><label>Billing Delay Comment</label><textarea id="projectBillingDelayComment"></textarea></div>
+<div class="admin-only-field"><label>28. Payment in Time · Admin only</label><select id="projectPaymentInTime" disabled><option value="">Auto-calculated</option><option value="true">Yes</option><option value="false">No</option></select><label>29. Payment Delay (Days) · Admin only</label><input id="projectPaymentDelayDays" readonly><label>Payment Delay Comment</label><textarea id="projectPaymentDelayComment"></textarea></div>
+<div class="admin-only-field"><label>30. Inactive Project Amount · Admin only</label><select id="inactiveProjectAmount"><option value="false">No</option><option value="true">Yes</option></select></div>
+<div class="admin-only-field"><label>31. Inactive Project Value (₹) · Admin only</label><input id="inactiveProjectValue" type="number" readonly></div>
+<div class="admin-only-field"><label>32. Select CEG Service · Admin only</label><select id="projectServiceDetails"><option value="">Select a CEG service</option><option value="Action Plan — ₹299*">Action Plan — ₹299*</option><option value="Aapka Naksha 2D — ₹999*">Aapka Naksha 2D — ₹999*</option><option value="Site Anusasan Online — ₹1,999*">Site Anusasan Online — ₹1,999*</option><option value="Sales ki Bhasha Online — ₹1,999*">Sales ki Bhasha Online — ₹1,999*</option><option value="Be Prepared Online — ₹1,999*">Be Prepared Online — ₹1,999*</option><option value="KYG — Know Your Ghar — ₹1,999*">KYG — Know Your Ghar — ₹1,999*</option><option value="KYW — Know Your Work — ₹2,999*">KYW — Know Your Work — ₹2,999*</option><option value="ANGAD — Aapka Doot — ₹4,999*">ANGAD — Aapka Doot — ₹4,999*</option><option value="Third Eye Remote PMC — ₹12,000*">Third Eye Remote PMC — ₹12,000*</option><option value="CEGPA — ₹499*">CEGPA — ₹499*</option><option value="ANGAD Follow Up — ₹799*">ANGAD Follow Up — ₹799*</option></select></div>
+<div class="admin-only-field"><label>33. Money Leakage (₹) · Admin only</label><input id="projectMoneyLeakage" type="number" min="0" step="0.01"></div>
+<label>34. Remarks</label><textarea id="projectRemarks" placeholder="Enter project remarks"></textarea></div></div>
 <p class="muted">Saved projects are automatically visible to Admin. No separate submission or resubmission step is required. Client payment entries remain pending Admin verification.</p>
 <button id="saveProject">Save Project</button><button type="button" id="publishClientProjectBtn" class="secondary hidden">Save & Publish Final Project</button><button data-close="projectForm" class="secondary">Cancel</button></div>
 <div id="adminTrackingForm" class="panel hidden">
@@ -320,7 +329,7 @@ const SUPABASE_URL="https://wcsnpazppvuwyzohxxpx.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indj c25wYXpwcHZ1d3l6b2h4eHB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzOTc2MDgsImV4cCI6MjExMDk3MzYwOH0.kuS5I3OsPdkX9QsjznWVzaXnAiSZdmau8NmXN4tUpdI".replace(" ","");
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[],projectRevisions=[],activeCompanyId="",adminClientEditProjectId=null,adminEditingClientProjectId=null;
+let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[],adminMetrics=[],projectRevisions=[],activeCompanyId="",adminClientEditProjectId=null,adminEditingClientProjectId=null;
 const isAdmin=()=>profile?.role==="admin";
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -427,16 +436,17 @@ function start(){
 }
 
 async function load(){
- const [c,p,pa,co,at,pr]=await Promise.all([
+ const [c,p,pa,co,at,pr,am]=await Promise.all([
   db.from("clients").select("id,client_name,email,phone,user_id,company_id,client_category"),
   db.from("projects").select("*"),
   db.from("payments").select("id,project_id,amount,payment_date,payment_mode,payment_type,reference_number,status").order("payment_date",{ascending:false}),
   db.from("companies").select("id,company_name").order("company_name"),
   db.from("project_admin_tracking").select("*"),
-  db.from("project_revisions").select("id,project_id,revision_no,revision_type,revision_note,created_at,created_by").order("revision_no",{ascending:true})
+  db.from("project_revisions").select("id,project_id,revision_no,revision_type,revision_note,created_at,created_by").order("revision_no",{ascending:true}),
+  isAdmin()?db.from("project_admin_metrics").select("*"):Promise.resolve({data:[],error:null})
  ]);
- for(const x of [c,p,pa,co,at,pr])if(x.error){alert(x.error.message);return false}
- clients=c.data||[];projects=(p.data||[]).filter(x=>!x.deleted_at);payments=pa.data||[];companies=co.data||[];adminTracking=at.data||[];projectRevisions=pr.data||[];
+ for(const x of [c,p,pa,co,at,pr,am])if(x.error){alert(x.error.message);return false}
+ clients=c.data||[];projects=(p.data||[]).filter(x=>!x.deleted_at);payments=pa.data||[];companies=co.data||[];adminTracking=at.data||[];adminMetrics=am.data||[];projectRevisions=pr.data||[];
  if(!isAdmin()){
   const ids=clients.filter(x=>x.user_id===user.id).map(x=>x.id);
   projects=projects.filter(x=>ids.includes(x.client_id));
@@ -488,6 +498,39 @@ function syncMaterialDateChain(sourceId,suffix=""){
  else if(role==="delivered"){actual.value=delivered.value;}
 }
 
+function signedDateDays(from,to){if(!from||!to)return null;const a=Date.parse(String(from).slice(0,10)+"T00:00:00Z"),b=Date.parse(String(to).slice(0,10)+"T00:00:00Z");return Number.isFinite(a)&&Number.isFinite(b)?Math.round((b-a)/86400000):null}
+function buildProjectAdminMetrics(projectId){
+ const actual=$("projectEnd").value||null,expected=$("expectedProjectEnd").value||null,dispatch=$("materialDispatch").value||null,delivered=$("materialDelivered").value||null,bill=$("billingDate").value||null,payment=$("projectPaymentDate").value||null;
+ const execution=signedDateDays(expected,actual),material=signedDateDays(dispatch,delivered),billing=signedDateDays(actual,bill),pay=signedDateDays(bill,payment);
+ const yesNo=n=>n===null?null:n<=0;
+ const inactive=$("inactiveProjectAmount").value==="true",projectValue=$("projectApproxValue").value===""?null:Number($("projectApproxValue").value);
+ $("inactiveProjectValue").value=inactive&&projectValue!==null?projectValue:"";
+ return {project_id:projectId,execution_in_time:yesNo(execution),execution_delay_days:execution===null?null:Math.max(0,execution),execution_delay_comment:$("projectExecutionDelayComment").value.trim()||null,material_in_time:yesNo(material),material_delay_days:material===null?null:Math.max(0,material),material_delay_comment:$("projectMaterialDelayComment").value.trim()||null,billing_in_time:yesNo(billing),billing_delay_days:billing===null?null:Math.max(0,billing),billing_delay_comment:$("projectBillingDelayComment").value.trim()||null,payment_in_time:yesNo(pay),payment_delay_days:pay===null?null:Math.max(0,pay),payment_delay_comment:$("projectPaymentDelayComment").value.trim()||null,inactive_project_amount:inactive,inactive_project_value:inactive?projectValue:null,ceg_service_designed:$("projectServiceDetails").value||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value)};
+}
+function setProjectAdminMetricFields(t){
+ $("projectExecutionInTime").value=t.execution_in_time===null||t.execution_in_time===undefined?"":String(t.execution_in_time);
+ $("projectExecutionDelayDays").value=t.execution_delay_days??"";
+ $("projectExecutionDelayComment").value=t.execution_delay_comment||"";
+ $("projectMaterialInTime").value=t.material_in_time===null||t.material_in_time===undefined?"":String(t.material_in_time);
+ $("projectMaterialDelayDays").value=t.material_delay_days??"";
+ $("projectMaterialDelayComment").value=t.material_delay_comment||"";
+ $("projectBillingInTime").value=t.billing_in_time===null||t.billing_in_time===undefined?"":String(t.billing_in_time);
+ $("projectBillingDelayDays").value=t.billing_delay_days??"";
+ $("projectBillingDelayComment").value=t.billing_delay_comment||"";
+ $("projectPaymentInTime").value=t.payment_in_time===null||t.payment_in_time===undefined?"":String(t.payment_in_time);
+ $("projectPaymentDelayDays").value=t.payment_delay_days??"";
+ $("projectPaymentDelayComment").value=t.payment_delay_comment||"";
+ $("inactiveProjectAmount").value=String(!!t.inactive_project_amount);
+ $("inactiveProjectValue").value=t.inactive_project_value??"";
+ $("projectServiceDetails").value=t.ceg_service_designed||"";
+ $("projectMoneyLeakage").value=t.money_leakage??"";
+}
+function refreshProjectAdminMetricPreview(){
+ const expected=$("expectedProjectEnd").value,actual=$("projectEnd").value,dispatch=$("materialDispatch").value,delivered=$("materialDelivered").value,bill=$("billingDate").value,payment=$("projectPaymentDate").value;
+ const set=(prefix,from,to)=>{const d=signedDateDays(from,to);$(prefix+"InTime").value=d===null?"":String(d<=0);$(prefix+"DelayDays").value=d===null?"":Math.max(0,d);};
+ set("projectExecution",expected,actual);set("projectMaterial",dispatch,delivered);set("projectBilling",actual,bill);set("projectPayment",bill,payment);
+ const value=$("projectApproxValue").value;$("inactiveProjectValue").value=$("inactiveProjectAmount").value==="true"&&value!==""?value:"";
+}
 function delayInfo(project){
  const today=new Date().toISOString().slice(0,10);
  const actualEnd=project.actual_project_end_date||project.project_end_date||null;
@@ -567,6 +610,9 @@ function openClientSubmittedProject(projectId){
  $("projectCegDate").value=p.ceg_date|| (p.created_at?String(p.created_at).slice(0,10):"");
  $("generateProjectCodeBtn").disabled=true;$("generateProjectCodeBtn").textContent="Project ID Fixed";
  $("projectName").value=p.project_name||"";
+ $("projectLocation").value=p.project_location||"";
+ $("projectExecutionStage").value=p.execution_stage||"";
+ $("projectApproxValue").value=p.project_value??"";
  $("projectType").value=p.project_type||"";
  $("projectStart").value=p.project_start_date||"";
  refreshExpectedDate("projectStart","expectedProjectEnd",p.expected_project_end_date||"");
@@ -575,7 +621,7 @@ function openClientSubmittedProject(projectId){
  $("projectWipReason").value=p.wip_delay_reason||"";
  $("billingDone").value=String(!!p.billing_done);
  $("billingDate").value=p.billing_date||"";
- $("billingAmount").value=p.billing_amount_with_tax??p.project_value??"";
+ $("billingAmount").value=p.billing_amount_with_tax??"";
  $("materialDispatch").value=p.material_dispatch_date||"";
  $("materialDelivered").value=p.material_delivered_date||"";
  $("projectPaymentType").value=latest?.payment_type||"";
@@ -584,7 +630,7 @@ function openClientSubmittedProject(projectId){
  $("projectBillingDelayReason").value=p.billing_delay_reason||"";
  $("projectPaymentDelayReason").value=p.payment_delay_reason||"";
  $("projectRemarks").value=p.client_remarks||"";
- const savedService=p.service_details||"";if(savedService&&!Array.from($("projectServiceDetails").options).some(o=>o.value===savedService)){const legacyOption=new Option(savedService+" (existing saved value)",savedService);legacyOption.dataset.legacyService="true";$("projectServiceDetails").add(legacyOption);}$("projectServiceDetails").value=savedService;$("projectMoneyLeakage").value=p.money_leakage??"";
+ const savedMetrics=adminMetrics.find(x=>x.project_id===projectId)||{};setProjectAdminMetricFields(savedMetrics);
  $("projectCodePreview").textContent="Project ID: "+(p.project_code||"");$("projectCodePreview").dataset.projectCode=p.project_code||"";$("projectCodePreview").classList.remove("hidden");
 
  $("adminSubmissionList").classList.add("hidden");
@@ -602,8 +648,8 @@ async function saveClientSubmittedProject(publishAfterSave=false){
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter the payment amount and payment date.");return}
  const dispatchDate=$("materialDispatch").value||null,deliveredDate=$("materialDelivered").value||null;
  const changes={
-  project_name:name,ceg_date:$("projectCegDate").value||null,client_remarks:$("projectRemarks").value.trim()||null,service_details:$("projectServiceDetails").value.trim()||null,money_leakage:$("projectMoneyLeakage").value===""?null:Number($("projectMoneyLeakage").value),
-  project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),
+  project_name:name,ceg_date:$("projectCegDate").value||null,project_location:$("projectLocation").value.trim()||null,execution_stage:$("projectExecutionStage").value||null,client_remarks:$("projectRemarks").value.trim()||null,
+  project_value:$("projectApproxValue").value===""?null:Number($("projectApproxValue").value),billing_amount_with_tax:billing===""?null:Number(billing),
   billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,
   project_type:$("projectType").value,project_start_date:$("projectStart").value,
   expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),
@@ -618,6 +664,7 @@ async function saveClientSubmittedProject(publishAfterSave=false){
  };
  const {data:updated,error}=await db.from("projects").update(changes).eq("id",projectId).select("*").single();
  if(error||!updated){alert("Project could not be updated: "+(error?.message||"No updated record returned."));return}
+ const {error:metricError}=await db.from("project_admin_metrics").upsert(buildProjectAdminMetrics(projectId));if(metricError){alert("Project saved, but Admin-only fields could not be saved: "+metricError.message);return}
  if(hasPayment){
   const linked=payments.filter(x=>x.project_id===projectId).slice().sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||"")));
   const latest=linked.length?linked[linked.length-1]:null;
@@ -729,9 +776,9 @@ async function deleteClientProject(id){
  await load();
 }
 function resetClientProjectForm(){
- ["projectName","projectStart","expectedProjectEnd","projectEnd","billingDate","billingAmount","projectPaymentAmount","projectPaymentDate","materialDispatch","materialDelivered","projectMoneyLeakage","projectRemarks"].forEach(id=>{if($(id))$(id).value="";});$("projectServiceDetails").value="";$("projectServiceDetails").querySelectorAll("option[data-legacy-service]").forEach(o=>o.remove());
- ["projectType","projectPaymentType","projectWipReason","projectBillingDelayReason","projectPaymentDelayReason"].forEach(id=>{if($(id))$(id).selectedIndex=0;});
- $("billingDone").value="false";$("projectCegDate").value=new Date().toISOString().slice(0,10);
+ ["projectName","projectLocation","projectApproxValue","projectStart","expectedProjectEnd","projectEnd","billingDate","billingAmount","projectPaymentAmount","projectPaymentDate","materialDispatch","materialDelivered","projectMoneyLeakage","projectRemarks","projectExecutionDelayComment","projectMaterialDelayComment","projectBillingDelayComment","projectPaymentDelayComment"].forEach(id=>{if($(id))$(id).value="";});$("projectServiceDetails").value="";$("projectServiceDetails").querySelectorAll("option[data-legacy-service]").forEach(o=>o.remove());
+ ["projectType","projectExecutionStage","projectPaymentType","projectWipReason","projectBillingDelayReason","projectPaymentDelayReason"].forEach(id=>{if($(id))$(id).selectedIndex=0;});
+ $("billingDone").value="false";$("inactiveProjectAmount").value="false";$("inactiveProjectValue").value="";$("projectCegDate").value=new Date().toISOString().slice(0,10);["projectExecutionInTime","projectMaterialInTime","projectBillingInTime","projectPaymentInTime"].forEach(id=>$(id).value="");["projectExecutionDelayDays","projectMaterialDelayDays","projectBillingDelayDays","projectPaymentDelayDays"].forEach(id=>$(id).value="");$("projectServiceDetails").value="";$("projectMoneyLeakage").value="";
  $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Generate Project ID";
  refreshExpectedDate("projectStart","expectedProjectEnd","");
 }
@@ -915,9 +962,10 @@ async function addProject(){
  if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!projectCode||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Generate the Project ID and complete Project Name, Project Type, Project Start Date and Expected Project End Date.");return;}
  const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value,hasPayment=!!(payType||payAmount||payDate);
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter amount and date.");return;}
- const payload={client_id:clientId,project_code:projectCode,ceg_date:$("projectCegDate").value||null,project_name:name,client_remarks:$("projectRemarks").value.trim()||null,project_value:Number(billing||0),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:false,wip_delay_reason:$("projectWipReason").value||null,billing_delay_reason:$("projectBillingDelayReason").value||null,payment_delay_reason:$("projectPaymentDelayReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
+ const payload={client_id:clientId,project_code:projectCode,ceg_date:$("projectCegDate").value||null,project_name:name,project_location:$("projectLocation").value.trim()||null,execution_stage:$("projectExecutionStage").value||null,client_remarks:$("projectRemarks").value.trim()||null,project_value:$("projectApproxValue").value===""?null:Number($("projectApproxValue").value),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:false,wip_delay_reason:$("projectWipReason").value||null,billing_delay_reason:$("projectBillingDelayReason").value||null,payment_delay_reason:$("projectPaymentDelayReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
  const {data,error}=await db.from("projects").insert(payload).select("*").single();if(error){alert(error.message);return;}
  resetClientProjectForm();
+ if(isAdmin()){const metricPayload=buildProjectAdminMetrics(data.id);const {error:metricError}=await db.from("project_admin_metrics").upsert(metricPayload);if(metricError){alert("Project saved, but Admin-only tracking could not be saved: "+metricError.message);await load();return;}}
  if(hasPayment){const {error:pe}=await db.from("payments").insert({project_id:data.id,amount:Number(payAmount),payment_date:payDate,payment_type:payType,status:"recorded",recorded_by:user.id,notes:"Client payment entry awaiting Admin verification"});if(pe){alert("Project saved, but payment entry failed: "+pe.message);await load();return;}}
  alert("Project saved and automatically shared with Admin. Project ID: "+data.project_code);
  hideForms();await load();
@@ -1136,7 +1184,7 @@ function renderAdminPerformanceDashboard(){
 }
 function buildAdminReportData(){
  const finals=finalReportProjects(),today=new Date().toISOString().slice(0,10);
- const summaryHeaders=["Company Name","Project ID","CEG Date","Project Name","Project Type","Project Start Date","Expected Project End Date","Actual Project End Date","Project Execution / WIP Delay Reason","Billing Date","Billing Amount with Tax","Payment Date","Payment Amount","Service Details","Execution Delay (Days)","Billing Delay (Days)","Payment Delay (Days)","Delete"];
+ const summaryHeaders=["Company Name","Project ID","CEG Date","Project Name","Project Location","Project Type","Execution Stage","Project Start Date","Expected Project End Date","Actual Project End Date","Project Execution / WIP Delay Reason","Approximate Project Value","Billing Date","Billing Amount with Tax","Payment Date","Payment Amount","Service Details","Execution Delay (Days)","Material Delay (Days)","Billing Delay (Days)","Payment Delay (Days)","Inactive Project Amount","Inactive Project Value","Money Leakage","Delete"];
  const dashboard=performanceDashboardData();
  const dashboardRows=[["Metric","Value"],["Report Date",dashboard.today],["Total Active Projects",dashboard.active.length],["Total Customers",dashboard.customers],["WIP · No Delay",dashboard.status.onTime.length],["WIP · Delayed",dashboard.status.delayed.length],["Billing Front-Ready · Not Billed",dashboard.status.billingReady.length],["Billing Completed",dashboard.status.billingDone.length],["Total Billing",dashboard.billing],["Verified Payments",dashboard.collection],["Billing vs Payments Gap",dashboard.gap]];
  const statusRows=[["Project Status","Project Count","Share"],["WIP · On time",dashboard.status.onTime.length,dashboard.active.length?dashboard.status.onTime.length/dashboard.active.length:0],["WIP · Delayed",dashboard.status.delayed.length,dashboard.active.length?dashboard.status.delayed.length/dashboard.active.length:0],["Billing ready · Pending",dashboard.status.billingReady.length,dashboard.active.length?dashboard.status.billingReady.length/dashboard.active.length:0],["Billing completed",dashboard.status.billingDone.length,dashboard.active.length?dashboard.status.billingDone.length/dashboard.active.length:0]];
@@ -1151,7 +1199,7 @@ async function downloadAdminExcel(){
  if(!window.XLSX){alert("Excel library did not load. Refresh the portal and try again.");return}
  const data=buildAdminReportData(),wb=XLSX.utils.book_new();
  const add=(name,rows,widths)=>{const ws=XLSX.utils.aoa_to_sheet(rows);setSheetWidths(ws,widths);XLSX.utils.book_append_sheet(wb,ws,name);};
- add("18-Column Summary",data.summary,[24,22,14,28,20,16,18,18,32,14,20,14,18,30,18,18,18,12]);
+ add("25-Column Summary",data.summary,[24,22,14,28,26,20,16,16,18,18,32,20,14,20,14,18,30,18,18,18,18,18,20,18,12]);
  add("21-Field Register",data.master,[22,24,14,28,20,16,18,18,32,14,14,20,16,18,14,18,18,26,26,30,18,30,24,18]);
  add("Project Analysis",data.analysis,[24,22,28,18,18,18,18,18,18,18]);
  add("CTA Follow-up",data.cta,[24,22,28,30,14,16,70]);
@@ -1225,6 +1273,7 @@ $("publishClientProjectBtn").onclick=()=>{if(adminEditingClientProjectId)saveCli
  document.addEventListener("change",e=>{const start=e.target.closest("[data-start-for]");if(start)refreshExpectedDate(start.id,start.dataset.startFor,"");});
  $("revProjectStart").addEventListener("input",()=>refreshExpectedDate("revProjectStart","revExpectedProjectEnd",""));
  $("revProjectStart").addEventListener("change",()=>refreshExpectedDate("revProjectStart","revExpectedProjectEnd",""));
+ ["projectApproxValue","projectEnd","expectedProjectEnd","materialDispatch","materialDelivered","billingDate","projectPaymentDate","inactiveProjectAmount"].forEach(id=>{const el=$(id);if(el){el.addEventListener("input",refreshProjectAdminMetricPreview);el.addEventListener("change",refreshProjectAdminMetricPreview);}});
 function exportCSV(){
  const rows=[["Project","Client","Value","Verified","Outstanding"]];
  projects.forEach(p=>{
