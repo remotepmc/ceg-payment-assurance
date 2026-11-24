@@ -327,6 +327,7 @@ const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 let user=null,profile=null,clients=[],projects=[],payments=[],companies=[],adminTracking=[],adminMetrics=[],projectRevisions=[],activeCompanyId="",adminClientEditProjectId=null,adminEditingClientProjectId=null;
+let adminProjectFormOriginalParent=null;
 const isAdmin=()=>profile?.role==="admin";
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -577,6 +578,7 @@ function renderAdminProjectSummary(){
 function closeAdminProjectEditor(){
  adminEditingClientProjectId=null;
  $("projectForm").classList.add("hidden");
+ if(adminProjectFormOriginalParent){adminProjectFormOriginalParent.appendChild($("projectForm"));adminProjectFormOriginalParent=null;}
  $("projectForm").querySelector("h3").textContent="Add Project";
  resetClientProjectForm();
  $("saveProject").textContent="Save Project";$("saveProject").classList.remove("hidden");
@@ -1355,8 +1357,9 @@ document.addEventListener("click",e=>{
  const submitted=e.target.closest("[data-open-client-submission]");if(submitted)openClientSubmittedProject(submitted.dataset.openClientSubmission);
   const summaryEdit=e.target.closest("[data-edit-admin-summary]");
   if(summaryEdit){
-   switchAdminWorkspaceTab("adminSubmissionsPanel");
-   $("adminSubmissionList").classList.remove("hidden");
+   if(!adminProjectFormOriginalParent)adminProjectFormOriginalParent=$("projectForm").parentElement;
+   $("adminSummaryPanel").appendChild($("projectForm"));
+   switchAdminWorkspaceTab("adminSummaryPanel");
    openClientSubmittedProject(summaryEdit.dataset.editAdminSummary);
   }
  const del=e.target.closest("[data-delete-client-project]");if(del)deleteClientProject(del.dataset.deleteClientProject);
