@@ -62,7 +62,7 @@ footer{text-align:center;padding:25px;color:#8190a3;font-size:22px}
 @media(max-width:420px){.cta-grid{grid-template-columns:1fr}}
 .status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:22px;font-weight:bold;margin:3px}
 .green{background:#e4f5ec;color:#187449}.yellow{background:#fff4d6;color:#946200}.red{background:#fff0ef;color:#bd3939}.neutral{background:#edf1f6;color:#526276}
-.project-summary-scroll{max-width:100%;overflow-x:auto}.project-summary-scroll table{border-collapse:collapse;min-width:2550px;width:max-content;font-size:18px}.project-summary-scroll th,.project-summary-scroll td{border:1px solid #dfe7f1;padding:10px 9px;white-space:nowrap;vertical-align:top}.project-summary-scroll th{background:#eaf1fa;position:sticky;top:0;z-index:1}.project-summary-scroll td{background:#fff}.project-summary-scroll button{font-size:17px;padding:7px 10px}.client-view #adminTrackingBtn,.client-view #recordPaymentBtn,.client-view #exportBtn,.client-view #refreshBtn,.client-view #projectLockNote{display:none!important}.client-view #clientProjectSummary{display:block!important}.client-view #projectClientAdminOnly{display:none!important}.client-only-project-field{display:none}.client-view .client-only-project-field{display:block}.client-view #staff>.actions #addEntryBtn,.client-view #staff>.actions #addProjectBtn{display:inline-block!important}@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
+.project-summary-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;border:1px solid #dfe7f1;border-radius:12px}.project-summary-scroll table{border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:3900px;width:max-content;font-size:18px}.project-summary-scroll th,.project-summary-scroll td{border-right:1px solid #dfe7f1;border-bottom:1px solid #dfe7f1;padding:11px 10px;white-space:normal;overflow-wrap:break-word;word-break:normal;vertical-align:top;width:112px;min-width:112px;max-width:150px;line-height:1.35}.project-summary-scroll th{background:#eaf1fa;color:#21456d;position:sticky;top:0;z-index:1;font-size:17px;font-weight:800;text-align:left}.project-summary-scroll th .summary-col-number{display:block;font-size:13px;color:#6b83a0;letter-spacing:.04em;margin-bottom:4px}.project-summary-scroll th .summary-col-name{display:block;white-space:normal;overflow-wrap:normal;word-break:normal}.project-summary-scroll td{background:#fff;overflow-wrap:anywhere}.project-summary-scroll tr:hover td{background:#f7faff}.project-summary-scroll th:last-child,.project-summary-scroll td:last-child{width:150px;min-width:150px;max-width:150px}.project-summary-scroll button{font-size:15px;padding:8px 10px;margin:2px;white-space:normal}.project-summary-scroll .summary-edit-button{background:#e6effb;color:#174c88}.project-summary-scroll .summary-delete-button{background:#fff0ef;color:#bd3939}.project-summary-help{font-size:14px;color:#718096;margin:8px 2px 0}.client-view #adminTrackingBtn,.client-view #recordPaymentBtn,.client-view #exportBtn,.client-view #refreshBtn,.client-view #projectLockNote{display:none!important}.client-view #clientProjectSummary{display:block!important}.client-view #projectClientAdminOnly{display:none!important}.client-only-project-field{display:none}.client-view .client-only-project-field{display:block}.client-view #staff>.actions #addEntryBtn,.client-view #staff>.actions #addProjectBtn{display:inline-block!important}@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
 
 .table-wrap{overflow-x:auto;background:#fff;border-radius:10px;margin:10px 0;box-shadow:0 2px 8px #0001}
 #recordsTable{border-collapse:collapse;width:100%;min-width:1450px;font-size:24px}
@@ -138,7 +138,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
  <div id="adminProjectFormHost"></div>
 </section>
 <section id="adminSummaryPanel" class="client-project-tab hidden">
- <h3>Summary</h3><p class="muted">Final-published projects · 35 fields, followed by Delete.</p>
+ <h3>Summary</h3><p class="muted">35 published fields · Admin can Edit, Republish or Delete.</p>
  <div class="table-wrap project-summary-scroll"><table id="adminProjectSummaryTable"><thead id="adminProjectSummaryHead"></thead><tbody id="adminProjectSummaryRows"><tr><td colspan="36" class="muted">Loading projects…</td></tr></tbody></table></div>
 </section>
 <section id="adminReportsPanel" class="client-project-tab hidden">
@@ -186,7 +186,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <button data-close="clientForm" class="secondary">Cancel</button>
 </div>
 <section id="clientProjectSummary" class="panel">
-<h3>Summary</h3><p class="muted">Final-published projects · 35 fields, followed by Delete.</p>
+<h3>Summary</h3><p class="muted">35 published fields · Swipe horizontally to view all fields and Delete.</p>
 <div class="table-wrap project-summary-scroll"><table id="clientProjectSummaryTable"><thead id="clientProjectSummaryHead"></thead><tbody id="clientProjectSummaryRows"><tr><td colspan="36" class="muted">No final-published projects yet.</td></tr></tbody></table></div></section>
 <div id="projectForm" class="panel hidden"><h3>Add Project</h3>
 <div class="form-section"><h4>Add Project · 35 Fields</h4>
@@ -563,7 +563,7 @@ function renderAdminClientSubmissions(){
 }
 function projectSummaryHeaderHtml(){
  const headers=reportMasterRows([])[0];
- return '<tr>'+headers.map(h=>'<th>'+esc(h)+'</th>').join('')+'<th>Delete</th></tr>';
+ return '<tr>'+headers.map(h=>{const match=h.match(/^(\d+)\.\s*(.*)$/);return '<th scope="col"><span class="summary-col-number">'+(match?match[1].padStart(2,'0'):'')+'</span><span class="summary-col-name">'+esc(match?match[2]:h)+'</span></th>';}).join('')+'<th scope="col"><span class="summary-col-name">Delete</span></th></tr>';
 }
 function projectSummaryDataRow(p){return reportMasterRows([p])[1]||Array(35).fill("");}
 function renderAdminProjectSummary(){
@@ -572,7 +572,7 @@ function renderAdminProjectSummary(){
  head.innerHTML=projectSummaryHeaderHtml();
  const rows=finalReportProjects();
  if(!rows.length){body.innerHTML='<tr><td colspan="36" class="muted">No final-published projects available.</td></tr>';return;}
- body.innerHTML=rows.map(p=>'<tr>'+projectSummaryDataRow(p).map(v=>'<td>'+esc(v==null||v===""?"—":v)+'</td>').join('')+'<td><button type="button" class="danger" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>').join("");
+ body.innerHTML=rows.map(p=>'<tr>'+projectSummaryDataRow(p).map(v=>'<td>'+esc(v==null||v===""?"—":v)+'</td>').join('')+'<td><button type="button" class="summary-edit-button" data-edit-admin-summary="'+esc(p.id)+'">Edit</button><button type="button" class="summary-delete-button" data-delete-client-project="'+esc(p.id)+'">Delete</button></td></tr>').join("");
 }
 function closeAdminProjectEditor(){
  adminEditingClientProjectId=null;
@@ -595,7 +595,7 @@ function openClientSubmittedProject(projectId){
  const latest=latestPayments.length?latestPayments[latestPayments.length-1]:null;
  $("projectForm").querySelector("h3").textContent="Edit Project · "+(p.project_code||"");
  $("saveProject").textContent="Save Project Changes";
- $("publishClientProjectBtn").classList.toggle("hidden",p.workflow_stage==="final");
+ $("publishClientProjectBtn").classList.remove("hidden");$("publishClientProjectBtn").textContent=p.workflow_stage==="final"?"Save & Republish Updated Report":"Save & Publish Final Project";
  $("projectClientAdminOnly").classList.remove("hidden");
  $("projectClient").value=p.client_id||"";
  $("projectCegDate").value=p.ceg_date|| (p.created_at?String(p.created_at).slice(0,10):"");
