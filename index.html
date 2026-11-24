@@ -134,6 +134,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
  <h3>Client Submissions</h3>
  <p class="muted">Open a client-submitted Project ID to review and edit the original filled project template. Changes stay on the same project record.</p>
  <div id="adminSubmissionList"></div>
+ <section class="form-section"><h4>Projects Ready to Publish</h4><p class="muted">Review and publish projects here after checking the saved details.</p><div id="adminPublishQueue"><p class="muted">Loading unpublished projects…</p></div></section>
  <div id="adminProjectFormHost"></div>
 </section>
 <section id="adminSummaryPanel" class="client-project-tab hidden">
@@ -144,7 +145,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 </section>
 <section id="adminReportsPanel" class="client-project-tab hidden">
  <h3>Final Project Reports</h3>
- <p class="muted">Publish a reviewed project below to include its latest saved data in Final Project Reports and export files.</p><section class="form-section"><h4>Projects Ready to Publish</h4><div id="adminPublishQueue"><p class="muted">Loading unpublished projects…</p></div></section>
+ <p class="muted">Published projects and their generated report data appear here.</p>
  <section class="performance-dashboard" id="adminPerformanceDashboard">
   <h3>Project Performance Dashboard</h3>
   <p class="muted">Live figures from all active projects. Billing-ready aging is calculated from Expected Project End Date.</p>
@@ -560,8 +561,7 @@ function renderAdminClientSubmissions(){
   const client=clients.find(c=>c.id===p.client_id)||{};
   const company=companies.find(c=>c.id===client.company_id)?.company_name||"";
   const stage=p.workflow_stage==="final"?"Final Project":"Ready for Admin Review";
-  const publishAction=p.workflow_stage==="final"?"":'<button type="button" data-finalize="'+esc(p.id)+'">Publish & Generate Report</button>';
-  return '<article class="project admin-submission-card"><div class="row"><b>'+esc(p.project_code||p.id)+'</b><span class="status '+(p.workflow_stage==="final"?"green":"yellow")+'">'+esc(stage)+'</span></div><p><b>Client:</b> '+esc(client.client_name||"—")+(company?' · '+esc(company):'')+'</p><p><b>Project:</b> '+esc(p.project_name||"—")+' · '+esc(p.project_type||"Type not selected")+'</p><p><b>Project ID:</b> '+esc(p.id)+'</p><div class="actions"><button type="button" data-open-client-submission="'+esc(p.id)+'">Open Filled Project</button>'+publishAction+'</div></article>';
+  return '<article class="project admin-submission-card"><div class="row"><b>'+esc(p.project_code||p.id)+'</b><span class="status '+(p.workflow_stage==="final"?"green":"yellow")+'">'+esc(stage)+'</span></div><p><b>Client:</b> '+esc(client.client_name||"—")+(company?' · '+esc(company):'')+'</p><p><b>Project:</b> '+esc(p.project_name||"—")+' · '+esc(p.project_type||"Type not selected")+'</p><p><b>Project ID:</b> '+esc(p.id)+'</p><button type="button" data-open-client-submission="'+esc(p.id)+'">Open Filled Project</button></article>';
  }).join(""):'<div class="notice">No client-submitted projects found.</div>';
 }
 function renderAdminProjectSummary(){
