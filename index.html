@@ -144,7 +144,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
  <div class="table-wrap project-summary-scroll"><table id="adminProjectSummaryTable"><thead id="adminProjectSummaryHead"></thead><tbody id="adminProjectSummaryRows"><tr><td colspan="38" class="muted">Loading projects…</td></tr></tbody></table></div>
 </section>
 <section id="adminRevisionPanel" class="client-project-tab hidden">
- <h3>Revision</h3><p class="muted">Edit any previously published project and republish the latest version. The original Project ID stays unchanged.</p>
+ <h3>Revision</h3><p class="muted">Edit any previously published project and republish the latest version. The same project record is retained; a republished Project ID receives the r suffix.</p>
  <div id="adminRevisionFormHost"></div>
  <div class="table-wrap"><table><thead><tr><th>Sl. No.</th><th>Project ID</th><th>Client</th><th>Project Name</th><th>Current Revision</th><th>Action</th></tr></thead><tbody id="adminRevisionRows"><tr><td colspan="6" class="muted">Loading published projects…</td></tr></tbody></table></div>
 </section>
@@ -790,7 +790,7 @@ function resetClientProjectForm(){
  ["projectName","projectLocation","projectApproxValue","projectStart","expectedProjectEnd","projectEnd","billingDate","billingAmount","projectPaymentAmount","projectPaymentDate","materialDispatch","materialDelivered","projectMoneyLeakage","projectRemarks","executionStageRemarks","projectExecutionRemarks","projectExecutionDelayComment","projectMaterialDelayComment","projectBillingDelayComment","projectPaymentDelayComment","projectPaymentDeficit"].forEach(id=>{if($(id))$(id).value="";});$("projectServiceDetails").value="";$("projectServiceDetails").querySelectorAll("option[data-legacy-service]").forEach(o=>o.remove());
  ["projectType","projectExecutionStage","projectPaymentType","projectWipReason","projectBillingDelayReason","projectPaymentDelayReason"].forEach(id=>{if($(id))$(id).selectedIndex=0;});
  $("billingDone").value="false";$("inactiveProjectAmount").value="false";$("inactiveProjectValue").value="";$("projectCegDate").value=new Date().toISOString().slice(0,10);["projectExecutionInTime","projectMaterialInTime","projectBillingInTime","projectPaymentInTime"].forEach(id=>$(id).value="");["projectExecutionDelayDays","projectMaterialDelayDays","projectBillingDelayDays","projectPaymentDelayDays"].forEach(id=>$(id).value="");$("projectServiceDetails").value="";$("projectMoneyLeakage").value="";
- $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Generate Project ID";
+ $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";if($("projectCodeInput"))$("projectCodeInput").value="";$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Regenerate Project ID";
  refreshExpectedDate("projectStart","expectedProjectEnd","");
 }
 function setProjectCode(value){
@@ -802,7 +802,7 @@ function setProjectCode(value){
 }
 async function generateProjectId(){
  const btn=$("generateProjectCodeBtn");btn.disabled=true;btn.textContent="Generating…";
- const {data,error}=await db.rpc("generate_project_code",{p_project_name:""});
+ const {data,error}=await db.rpc("generate_project_code",{p_project_name:"Project"});
  if(error||!data){btn.disabled=false;btn.textContent="Regenerate Project ID";alert("Project ID generation failed: "+(error?.message||"No ID returned."));return;}
  const digits=String(data).match(/\d+/g)?.join("")||"";
  if(!digits){btn.disabled=false;btn.textContent="Regenerate Project ID";alert("The ID generator returned an invalid ID. No project was saved.");return;}
@@ -989,6 +989,9 @@ async function addProject(){
  if(adminEditingClientProjectId){await saveClientSubmittedProject();return;}
  const name=$("projectName").value.trim(),billing=$("billingAmount").value,clientId=$("projectClient").value,projectCode=$("projectCodeInput").value.trim().toUpperCase();
  if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!/^CEG\d{4,}r?$/i.test(projectCode)||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("A valid Project ID is required. Complete Project Name, Project Type, Project Start Date and Expected Project End Date.");return;}
+ const {data:duplicateCode,error:codeCheckError}=await db.from("projects").select("id").eq("project_code",projectCode).is("deleted_at",null).limit(1).maybeSingle();
+ if(codeCheckError){alert("Project ID could not be checked: "+codeCheckError.message);return;}
+ if(duplicateCode){alert("This Project ID is already in use. Use Edit ID to enter a unique ID or regenerate it.");return;}
  const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value,hasPayment=!!(payType||payAmount||payDate);
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter amount and date.");return;}
  const payload={client_id:clientId,project_code:projectCode,ceg_date:$("projectCegDate").value||null,project_name:name,project_location:$("projectLocation").value.trim()||null,execution_stage:$("projectExecutionStage").value||null,execution_stage_remarks:$("executionStageRemarks").value.trim()||null,project_execution_remarks:$("projectExecutionRemarks").value.trim()||null,client_remarks:$("projectRemarks").value.trim()||null,project_value:$("projectApproxValue").value===""?null:Number($("projectApproxValue").value),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:false,wip_delay_reason:$("projectWipReason").value||null,billing_delay_reason:$("projectBillingDelayReason").value||null,payment_delay_reason:$("projectPaymentDelayReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
