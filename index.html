@@ -144,7 +144,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 </section>
 <section id="adminReportsPanel" class="client-project-tab hidden">
  <h3>Final Project Reports</h3>
- <p class="muted">Reports are generated from the latest saved database records. Only Admin-published Final Projects are included.</p>
+ <p class="muted">Publish a reviewed project below to include its latest saved data in Final Project Reports and export files.</p><section class="form-section"><h4>Projects Ready to Publish</h4><div id="adminPublishQueue"><p class="muted">Loading unpublished projects…</p></div></section>
  <section class="performance-dashboard" id="adminPerformanceDashboard">
   <h3>Project Performance Dashboard</h3>
   <p class="muted">Live figures from all active projects. Billing-ready aging is calculated from Expected Project End Date.</p>
@@ -455,7 +455,7 @@ async function load(){
   $("clientHelp").classList.toggle("hidden",clients.length>0);
  }
  render();
- if(isAdmin()){renderAdminClientSubmissions();renderAdminProjectSummary();renderAdminReportStats();}
+ if(isAdmin()){renderAdminClientSubmissions();renderAdminProjectSummary();renderAdminPublishQueue();renderAdminReportStats();}
  return true;
 }
 function paid(id){return payments.filter(p=>p.project_id===id&&p.status==="verified").reduce((s,p)=>s+Number(p.amount),0)}
@@ -604,7 +604,7 @@ function openClientSubmittedProject(projectId){
  $("projectForm").querySelector("h3").textContent="Edit Client Project · "+(p.project_code||"");
  $("saveProject").textContent="Save Project Changes";
  $("publishClientProjectBtn").classList.remove("hidden");
- $("projectClientAdminOnly").classList.add("hidden");
+ $("projectClientAdminOnly").classList.remove("hidden");
  $("projectClient").value=p.client_id||"";
  $("projectCegDate").value=p.ceg_date|| (p.created_at?String(p.created_at).slice(0,10):"");
  $("projectLocation").value=p.project_location||"";
@@ -649,7 +649,7 @@ async function saveClientSubmittedProject(publishAfterSave=false){
  const original=projects.find(p=>p.id===projectId);
  if(!original){alert("Project not found. Refresh and try again.");return}
  const name=$("projectName").value.trim(),billing=$("billingAmount").value;
- if(!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Project Name, Project Type, Project Start Date and Expected Project End Date are mandatory.");return}
+ if(!$("projectClient").value||!clients.some(c=>c.id===$("projectClient").value)||!name||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Select a Client and complete Project Name, Project Type, Project Start Date and Expected Project End Date.");return}
  const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value;
  const hasPayment=!!(payType||payAmount||payDate);
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter the payment amount and payment date.");return}
@@ -875,7 +875,7 @@ function render(){
   const badge=(label,item,reason)=>item.days===null||item.days<1?"":`<span class="status ${item.status}">${label}: ${item.days} days</span>`+(reason?` <span class="muted">Reason: ${esc(reason)}</span>`:"");
   const history=projectRevisions.filter(r=>r.project_id===p.id).map(r=>`<li>Revision ${r.revision_no}: ${esc(r.revision_type.replace("_"," "))} — ${esc(r.revision_note||"")} <span class="muted">${esc(String(r.created_at||"").slice(0,10))}</span></li>`).join("");
   const clientSubmitted=clients.some(x=>x.user_id&&x.user_id===p.created_by);
-  const adminActions=isAdmin()&&p.workflow_stage!=="final"?(clientSubmitted?`<p><button data-edit-client-project="${p.id}">Edit Client Project</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Approve Final Project</button></p>`:`<p><button data-revise="${p.id}">Open Add Revision</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Approve Final Project</button></p>`):isAdmin()?`<p><button data-open-project="${p.id}">View Full Details</button></p>`:"";
+  const adminActions=isAdmin()?(p.workflow_stage!=="final"?`<p><button data-edit-client-project="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button><button data-finalize="${p.id}">Publish & Generate Report</button></p>`:`<p><button data-edit-client-project="${p.id}">Edit Project</button><button data-open-project="${p.id}">View Full Details</button></p>`):"";
   const service=t.ceg_service_designed||"Not yet mapped by Admin";
   const legacyService=service==="Previously marked Yes";
   const serviceLabel=legacyService?"Legacy service flag — exact service name not recorded":service;
@@ -1335,7 +1335,7 @@ function switchAdminWorkspaceTab(target){
  });
  try{
   if(target==="adminSummaryPanel")renderAdminProjectSummary();
-  if(target==="adminReportsPanel")renderAdminReportStats();
+  if(target==="adminReportsPanel"){renderAdminPublishQueue();renderAdminReportStats();}
  }catch(error){
   console.error("Admin tab content error:",error);
   const panel=$(target);
