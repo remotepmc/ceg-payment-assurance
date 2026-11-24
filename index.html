@@ -197,11 +197,12 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <div class="table-wrap project-summary-scroll"><table id="clientProjectSummaryTable"><thead id="clientProjectSummaryHead"></thead><tbody id="clientProjectSummaryRows"><tr><td colspan="38" class="muted">No final-published projects yet.</td></tr></tbody></table></div></section>
 <div id="projectForm" class="panel hidden"><h3>Add Project</h3>
 <div class="form-section"><h4>Add Project · 35 Fields</h4>
+<label>Project ID *</label><div class="actions"><input id="projectCodeInput" readonly placeholder="Generating Project ID…" aria-label="Project ID"><button type="button" id="overrideProjectCodeBtn" class="secondary admin-only-field">Edit ID</button></div><p id="projectCodeOverrideNote" class="muted admin-only-field hidden">Manual ID override is enabled. Use a unique CEG ID.</p>
 <div id="projectClientAdminOnly"><label>Client Name</label><select id="projectClient"></select></div>
 <div class="client-only-project-field"><label>1. Company Name</label><input id="projectClientNameDisplay" readonly></div>
 <label>2. CEG Date *</label><input id="projectCegDate" type="date" required>
 <label>3. Project Name *</label><input id="projectName" placeholder="Enter project name">
-<button type="button" id="generateProjectCodeBtn" class="secondary">Generate Project ID</button><p id="projectCodePreview" class="notice hidden"></p>
+<button type="button" id="generateProjectCodeBtn" class="secondary">Regenerate Project ID</button><p id="projectCodePreview" class="notice hidden"></p>
 <label>4. Project Location</label><textarea id="projectLocation" placeholder="Enter project location"></textarea>
 <label>5. Project Type *</label><select id="projectType"><option value="">Select project type</option><option>Civil - Footing and Plinth</option><option>Civil - Structure upto Slab</option><option>Civil - Slab</option><option>Civil - Brick work super structure</option><option>Civil - Plastering Tiles</option><option>Civil - Door Window Gril Glass</option><option>Civil - MEP</option><option>Civil - Pain and Finish</option><option>Interior - plywood work</option><option>Interior - lamination</option><option>Interior - hardware fitting</option><option>Materials Supply</option><option>Design Drawing</option><option>Skill Training</option><option>Others</option></select>
 <label>6. Execution Stage</label><select id="projectExecutionStage"><option value="">Select execution stage</option><option>WIP</option><option>Delay</option><option>Hold</option></select><label>Execution Stage Remarks</label><textarea id="executionStageRemarks" placeholder="Add remarks about the execution stage"></textarea>
@@ -600,7 +601,7 @@ function closeAdminProjectEditor(){
  $("projectForm").querySelector("h3").textContent="Add Project";
  resetClientProjectForm();
  $("saveProject").textContent="Save Project";$("saveProject").classList.remove("hidden");
- $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Generate Project ID";
+ $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";$("projectCodeInput").value="";$("projectCodeInput").readOnly=true;$("overrideProjectCodeBtn").classList.add("hidden");$("overrideProjectCodeBtn").textContent="Edit ID";$("projectCodeOverrideNote").classList.add("hidden");$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Regenerate Project ID";
  $("projectClientAdminOnly").classList.remove("hidden");
  $("publishClientProjectBtn").classList.add("hidden");
  $("adminSubmissionList").classList.remove("hidden");
@@ -624,7 +625,7 @@ function openClientSubmittedProject(projectId){
  $("projectExecutionStage").value=p.execution_stage||"";
   $("executionStageRemarks").value=p.execution_stage_remarks||"";
  $("projectApproxValue").value=p.project_value??"";
- $("generateProjectCodeBtn").disabled=true;$("generateProjectCodeBtn").textContent="Project ID Fixed";
+ $("generateProjectCodeBtn").disabled=true;$("generateProjectCodeBtn").textContent="Project ID Fixed";$("projectCodeInput").value=p.project_code||"";$("projectCodeInput").readOnly=true;$("overrideProjectCodeBtn").classList.toggle("hidden",!isAdmin());$("overrideProjectCodeBtn").textContent="Edit ID";$("projectCodeOverrideNote").classList.add("hidden");
  $("projectName").value=p.project_name||"";
  $("projectLocation").value=p.project_location||"";
  $("projectExecutionStage").value=p.execution_stage||"";
@@ -651,7 +652,7 @@ function openClientSubmittedProject(projectId){
  $("projectPaymentDelayReason").value=p.payment_delay_reason||"";
  $("projectRemarks").value=p.client_remarks||"";
  const savedMetrics=adminMetrics.find(x=>x.project_id===projectId)||{};setProjectAdminMetricFields(savedMetrics);
- $("projectCodePreview").textContent="Project ID: "+(p.project_code||"");$("projectCodePreview").dataset.projectCode=p.project_code||"";$("projectCodePreview").classList.remove("hidden");
+ setProjectCode(p.project_code||"");
 
  $("adminSubmissionList").classList.add("hidden");
  $("projectForm").classList.remove("hidden");
@@ -792,12 +793,30 @@ function resetClientProjectForm(){
  $("projectCodePreview").classList.add("hidden");$("projectCodePreview").dataset.projectCode="";$("generateProjectCodeBtn").disabled=false;$("generateProjectCodeBtn").textContent="Generate Project ID";
  refreshExpectedDate("projectStart","expectedProjectEnd","");
 }
+function setProjectCode(value){
+ const code=String(value||"").trim().toUpperCase();
+ $("projectCodeInput").value=code;
+ $("projectCodePreview").textContent=code?"Project ID: "+code:"";
+ $("projectCodePreview").dataset.projectCode=code;
+ $("projectCodePreview").classList.toggle("hidden",!code);
+}
 async function generateProjectId(){
- const name=$("projectName").value.trim();if(!name){alert("Enter Project Name first.");$("projectName").focus();return;}
- const btn=$("generateProjectCodeBtn");btn.disabled=true;btn.textContent="Generating...";
- const {data,error}=await db.rpc("generate_project_code",{p_project_name:name});
- if(error||!data){btn.disabled=false;btn.textContent="Generate Project ID";alert("Project ID generation failed: "+(error?.message||"No ID returned."));return;}
- $("projectCodePreview").textContent="Project ID: "+data;$("projectCodePreview").dataset.projectCode=data;$("projectCodePreview").classList.remove("hidden");btn.textContent="Project ID Generated";
+ const btn=$("generateProjectCodeBtn");btn.disabled=true;btn.textContent="Generating…";
+ const {data,error}=await db.rpc("generate_project_code",{p_project_name:""});
+ if(error||!data){btn.disabled=false;btn.textContent="Regenerate Project ID";alert("Project ID generation failed: "+(error?.message||"No ID returned."));return;}
+ const digits=String(data).match(/\d+/g)?.join("")||"";
+ if(!digits){btn.disabled=false;btn.textContent="Regenerate Project ID";alert("The ID generator returned an invalid ID. No project was saved.");return;}
+ const code="CEG"+digits.padStart(4,"0");
+ setProjectCode(code);
+ btn.textContent="Regenerate Project ID";btn.disabled=false;
+}
+function toggleProjectCodeOverride(){
+ if(!isAdmin()){alert("Only Admin can override a Project ID.");return;}
+ const input=$("projectCodeInput"),enabled=input.readOnly;
+ input.readOnly=!enabled;
+ $("overrideProjectCodeBtn").textContent=enabled?"Lock ID":"Edit ID";
+ $("projectCodeOverrideNote").classList.toggle("hidden",!enabled);
+ if(enabled)input.focus();
 }
 function render(){
  renderClientProjectSummary();
@@ -968,8 +987,8 @@ async function addClient(){
 }
 async function addProject(){
  if(adminEditingClientProjectId){await saveClientSubmittedProject();return;}
- const name=$("projectName").value.trim(),billing=$("billingAmount").value,clientId=$("projectClient").value,projectCode=$("projectCodePreview").dataset.projectCode||"";
- if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!projectCode||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("Generate the Project ID and complete Project Name, Project Type, Project Start Date and Expected Project End Date.");return;}
+ const name=$("projectName").value.trim(),billing=$("billingAmount").value,clientId=$("projectClient").value,projectCode=$("projectCodeInput").value.trim().toUpperCase();
+ if(!clients.length||!clientId||!clients.some(c=>c.id===clientId)||!name||!/^CEG\d{4,}r?$/i.test(projectCode)||!$("projectType").value||!$("projectStart").value||!$("expectedProjectEnd").value){alert("A valid Project ID is required. Complete Project Name, Project Type, Project Start Date and Expected Project End Date.");return;}
  const payType=$("projectPaymentType").value,payAmount=$("projectPaymentAmount").value,payDate=$("projectPaymentDate").value,hasPayment=!!(payType||payAmount||payDate);
  if(hasPayment&&(!payType||!payAmount||Number(payAmount)<=0||!payDate)){alert("For a payment entry, select Full or Part and enter amount and date.");return;}
  const payload={client_id:clientId,project_code:projectCode,ceg_date:$("projectCegDate").value||null,project_name:name,project_location:$("projectLocation").value.trim()||null,execution_stage:$("projectExecutionStage").value||null,execution_stage_remarks:$("executionStageRemarks").value.trim()||null,project_execution_remarks:$("projectExecutionRemarks").value.trim()||null,client_remarks:$("projectRemarks").value.trim()||null,project_value:$("projectApproxValue").value===""?null:Number($("projectApproxValue").value),billing_amount_with_tax:billing===""?null:Number(billing),billing_done:$("billingDone").value==="true",billing_date:$("billingDate").value||null,project_type:$("projectType").value,project_start_date:$("projectStart").value,expected_duration_days:durationBetween($("projectStart").value,$("expectedProjectEnd").value),expected_project_end_date:$("expectedProjectEnd").value,actual_project_end_date:$("projectEnd").value||null,project_end_date:$("projectEnd").value||null,project_hold:false,wip_delay_reason:$("projectWipReason").value||null,billing_delay_reason:$("projectBillingDelayReason").value||null,payment_delay_reason:$("projectPaymentDelayReason").value||null,material_dispatch_date:$("materialDispatch").value||null,material_delivered_date:$("materialDelivered").value||null,status:"active",workflow_stage:"revision",revision_no:1,created_by:user.id};
@@ -1056,8 +1075,9 @@ async function finalizeProject(projectId,skipConfirmation=false){
  if(!project.project_start_date||!project.expected_project_end_date){alert("Cannot approve: Project Start Date and Expected Project End Date are mandatory. Add them in Add Revision first.");return}
   if(!skipConfirmation&&!confirm("Publish the latest data for "+(project.project_code||project.project_name)+" to Admin Summary, Client Summary and Excel?"))return;
  const nextRevision=Number(project.revision_no||1)+1;
+ const revisedCode=project.workflow_stage==="final"&&!/r$/i.test(project.project_code||"")?(String(project.project_code||"").replace(/r\d*$/i,"")+"r"):(project.project_code||"");
  const {error}=await db.from("projects").update({
-  workflow_stage:"final",revision_no:nextRevision,finalized_at:new Date().toISOString(),finalized_by:user.id
+  project_code:revisedCode,workflow_stage:"final",revision_no:nextRevision,finalized_at:new Date().toISOString(),finalized_by:user.id
  }).eq("id",projectId);
  if(error){alert(error.message);return}
  const {data:latest,error:fetchError}=await db.from("projects").select("*").eq("id",projectId).single();
@@ -1068,7 +1088,7 @@ async function finalizeProject(projectId,skipConfirmation=false){
   revision_note:"Approved by Admin as Final Project",created_by:user.id
  });
  if(historyError){alert("Project finalised, but final history record failed: "+historyError.message);return}
- alert(project.project_code+" moved to Final Project.");
+ alert((revisedCode||project.project_code)+" moved to Final Project.");
  await load();
 }
 async function addPayment(){
@@ -1383,8 +1403,8 @@ document.addEventListener("click",e=>{
    openClientSubmittedProject(revisionEdit.dataset.editAdminRevision);
   }
  const del=e.target.closest("[data-delete-client-project]");if(del)deleteClientProject(del.dataset.deleteClientProject);
- const gen=e.target.closest("#generateProjectCodeBtn");if(gen)generateProjectId();
- const t=e.target.closest("[data-toggle]");if(t){$(t.dataset.toggle).classList.toggle("hidden");if(t.dataset.toggle==="projectForm"&&!adminEditingClientProjectId){$("projectCegDate").value=new Date().toISOString().slice(0,10);$("projectClientNameDisplay").value=companies.find(x=>x.id===clients[0]?.company_id)?.company_name||"";}}
+ const gen=e.target.closest("#generateProjectCodeBtn");if(gen)generateProjectId();const override=e.target.closest("#overrideProjectCodeBtn");if(override)toggleProjectCodeOverride();
+ const t=e.target.closest("[data-toggle]");if(t){$(t.dataset.toggle).classList.toggle("hidden");if(t.dataset.toggle==="projectForm"&&!adminEditingClientProjectId){$("projectCegDate").value=new Date().toISOString().slice(0,10);$("projectClientNameDisplay").value=companies.find(x=>x.id===clients[0]?.company_id)?.company_name||"";$("projectCodeInput").value="";$("projectCodeInput").readOnly=true;$("overrideProjectCodeBtn").classList.toggle("hidden",!isAdmin());$("overrideProjectCodeBtn").textContent="Edit ID";$("projectCodeOverrideNote").classList.add("hidden");generateProjectId();}}
  const c=e.target.closest("[data-close]");if(c){if(c.dataset.close==="projectForm"&&adminEditingClientProjectId){closeAdminProjectEditor();}else $(c.dataset.close).classList.add("hidden");if(c.dataset.close==="adminTrackingForm"){adminClientEditProjectId=null;$("trackingProjectLabel").classList.remove("hidden");$("trackingProject").classList.remove("hidden");$("adminTrackingForm").querySelector("h3").textContent="Add Revision (Admin)";$("saveAdminTracking").textContent="Save Revision";}}
  const v=e.target.closest("[data-verify]");if(v)verify(v.dataset.verify,v.dataset.status);
  const clientEdit=e.target.closest("[data-edit-client-project]");if(clientEdit){const id=clientEdit.dataset.editClientProject;const p=projects.find(x=>x.id===id);if(!p){alert("Client project not found. Refresh and try again.");return}adminClientEditProjectId=id;if(![...$("trackingProject").options].some(o=>o.value===id))$("trackingProject").add(new Option((p.project_code||"")+" — "+p.project_name,id));$("trackingProject").value=id;$("trackingProject").dispatchEvent(new Event("change"));$("trackingProjectLabel").classList.add("hidden");$("trackingProject").classList.add("hidden");$("adminTrackingForm").querySelector("h3").textContent="Edit Client Submitted Project";$("saveAdminTracking").textContent="Save Project Changes";$("adminProjectDetail").classList.add("hidden");$("adminTrackingForm").classList.remove("hidden");$("adminTrackingForm").scrollIntoView({behavior:"smooth",block:"start"});}
