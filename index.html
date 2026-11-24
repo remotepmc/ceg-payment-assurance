@@ -166,7 +166,7 @@ body.admin-view #app > :not(.row):not(#adminClientWorkspace){display:none!import
 <section id="staff" class="hidden">
 <div class="actions">
 <button id="addEntryBtn" data-toggle="clientForm">+ Add Entry</button>
-<button id="addProjectBtn" data-toggle="projectForm" disabled title="Complete Add Entry first">+ Add Project (locked)</button>
+<button id="addProjectBtn" data-toggle="projectForm">+ Add Project</button>
 <button id="adminTrackingBtn" data-toggle="adminTrackingForm">Add Revision</button>
 <button id="recordPaymentBtn" data-toggle="paymentForm">+ Submit / Record Payment</button>
 <button id="exportBtn" class="secondary">Export Report</button>
@@ -603,7 +603,7 @@ function openClientSubmittedProject(projectId){
  const latest=latestPayments.length?latestPayments[latestPayments.length-1]:null;
  $("projectForm").querySelector("h3").textContent="Edit Project · "+(p.project_code||"");
  $("saveProject").textContent="Save Project Changes";
- $("publishClientProjectBtn").classList.remove("hidden");
+ $("publishClientProjectBtn").classList.toggle("hidden",p.workflow_stage==="final");
  $("projectClientAdminOnly").classList.remove("hidden");
  $("projectClient").value=p.client_id||"";
  $("projectCegDate").value=p.ceg_date|| (p.created_at?String(p.created_at).slice(0,10):"");
